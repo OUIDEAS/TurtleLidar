@@ -125,7 +125,7 @@ dmypy.json
 .pyre/
 
 # VScode
-.json
+*.json
 
 # Prerequisites
 *.d

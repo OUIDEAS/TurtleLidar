@@ -7,13 +7,29 @@ THT 2/4/20
 #include <Adafruit_MotorShield.h>
 //#include "utility/Adafruit_PWMServoDriver.h"
 
-Adafruit_MotorShield AFMS = Adafruit_MotorShield();
+// Limit Switches
+#define panSwitch 9
+#define tiltSwitch 10
 
+// Motor Shield 
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_StepperMotor *TiltMotor = AFMS.getStepper(200, 1);
 Adafruit_StepperMotor *PanMotor = AFMS.getStepper(200, 2);
 
 
 String inString = "";    // string to hold input ..... Don't know if needed 
+
+void home(){
+  Serial.print("Homing... ");
+  while(digitalRead(panSwitch) != HIGH){
+    PanMotor->step(1,BACKWARD,MICROSTEP);
+  }
+  Serial.print("... ");
+  // while(digitalRead(tiltSwitch) != HIGH){
+  //   TiltMotor->step(1,BACKWARD,MICROSTEP)
+  // }
+  Serial.println("...Homed");
+}
 
 void setup() {
   Serial.begin(115200);
@@ -22,8 +38,7 @@ void setup() {
   TiltMotor->setSpeed(10);
   PanMotor->setSpeed(10);
 
-  PanMotor->step(0, FORWARD, SINGLE);
-  TiltMotor->step(1, FORWARD, SINGLE);
+  home();
 }
 
 void loop() {

@@ -1,2 +1,4 @@
-# Corrugated Pipe Scanning
+# Pipe SLAM
+
+Repository for Pipe SLAM without the SLAM
  

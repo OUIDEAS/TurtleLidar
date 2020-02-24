@@ -40,6 +40,27 @@ class LidarGimbal():
         health = self.lidar.get_health()
         print(health)
 
+    def steplidar(self, motor, steps):
+        if motor == "Pan":
+            if steps > 0:
+                self.PanStepper.step(steps, Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)
+            else:
+                self.PanStepper.step(abs(steps), Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
+        elif motor == "Tilt":
+            if steps > 0:
+                self.TiltStepper.step(steps, Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)
+            else:
+                self.TiltStepper.step(abs(steps), Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
+        else:
+            print("Invalid input for motor")
+            print("Valid inputs are Pan or Tilt")
+
+    def holdSteppers(self):
+        self.steplidar('Pan', 1)
+        self.steplidar('Pan', -1)
+        self.steplidar('Tilt', 1)
+        self.steplidar('Tilt', -1)
+
     def homeLidar(self, panPin, tiltPin):
         # This needs rewritten/finished
         panbtn = Button(panPin)
@@ -47,10 +68,10 @@ class LidarGimbal():
 
         print("Homing...")
         while not panbtn.is_pressed():
-            self.PanStepper.step(1, Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
+            self.steplidar("Pan", 1)
         print("...")
         while not tiltbtn.is_pressed():
-            self.TiltStepper.step(1, Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
+            self.steplidar("Tilt", 1)
         print("...Homed")
 
     def zeroLidar(self):
@@ -73,7 +94,7 @@ class LidarGimbal():
                     # Need Error Function
                     Error = 0
                     if Error != 0:
-                        self.PanStepper.step(1, Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)
+                        self.steplidar("Pan", 1)
                     else:
                         panZero = True
 
@@ -81,7 +102,7 @@ class LidarGimbal():
                     # Need Error Function
                     Error = 0
                     if Error != 0:
-                        self.TiltStepper.step(1, Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)
+                        self.steplidar("Tilt", 1)
                     else:
                         tiltZero = True
                 else:

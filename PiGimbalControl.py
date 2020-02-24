@@ -1,6 +1,4 @@
 from Raspi_MotorHAT import Raspi_MotorHAT
-import time
-import atexit
 
 mh = Raspi_MotorHAT(0x6F)
 
@@ -24,13 +22,13 @@ def run():
             if pan > 0:
                 PanStepper.step(pan, Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)
             else:
-                PanStepper.step(pan, Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
+                PanStepper.step(abs(pan), Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
 
             tilt = int(input("Tilt how many steps: "))
             if tilt > 0:
                 TiltStepper.step(tilt, Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)
             else:
-                TiltStepper.step(tilt, Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
+                TiltStepper.step(abs(tilt), Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
             stop = int(input("Type 7 to stop: "))
             if stop == 7:
                 break

@@ -13,8 +13,8 @@ THT 2/4/20
 
 // Motor Shield 
 Adafruit_MotorShield AFMS = Adafruit_MotorShield();
-Adafruit_StepperMotor *TiltMotor = AFMS.getStepper(200, 1);
-Adafruit_StepperMotor *PanMotor = AFMS.getStepper(200, 2);
+Adafruit_StepperMotor *TiltMotor = AFMS.getStepper(200, 2);
+Adafruit_StepperMotor *PanMotor = AFMS.getStepper(200, 1);
 
 
 String inString = "";    // string to hold input ..... Don't know if needed 
@@ -38,7 +38,7 @@ void setup() {
   TiltMotor->setSpeed(10);
   PanMotor->setSpeed(10);
 
-  home();
+//  home();
 }
 
 void loop() {
@@ -67,4 +67,3 @@ void loop() {
     inString = "";
   }
 }
-

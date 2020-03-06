@@ -1,4 +1,4 @@
-from Raspi_MotorHAT import Raspi_MotorHAT
+from Raspi_MotorHAT import Raspi_MotorHAT, Raspi_StepperMotor
 import numpy as np
 import time
 from rplidar import RPLidar
@@ -42,7 +42,7 @@ class LidarGimbal():
         print(health)
 
     def steplidar(self, motor, steps):
-        steps = steps*3
+        # steps = steps*3
         if motor == "Pan":
             if steps > 0:
                 self.PanStepper.step(abs(steps), Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)

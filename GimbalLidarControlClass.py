@@ -5,7 +5,8 @@ from rplidar import RPLidar
 from gpiozero import Button
 from circle_fit import least_squares_circle
 
-class LidarGimbal():
+
+class LidarGimbal:
     def __init__(self, PortName):
 
         self.DEG2RAD = np.pi / 180

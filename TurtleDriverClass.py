@@ -64,3 +64,16 @@ class TurtleDriver:
             Rspd = max * np.sign(Lspd)
 
         self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
+
+    def debug(self):
+        t = time.time()
+        while True:
+            if time.time() - t < 3:
+                Lspd = 1
+                Rspd = -1
+                self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
+            else:
+                Lspd = 0
+                Rspd = 0
+                self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
+                break

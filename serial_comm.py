@@ -1,6 +1,7 @@
 from __future__ import with_statement
 import serial
 from threading import Lock
+import time
 
 
 class SerialComm():
@@ -30,7 +31,7 @@ class SerialComm():
                 return status
 
     def connect(self):
-        while self.serial is None and not rospy.is_shutdown():
+        while self.serial is None:
             try:
                 self.serial = serial.Serial(
                     self.device,
@@ -42,6 +43,7 @@ class SerialComm():
             except serial.SerialException as e:
                 print(e)
                 print("Waiting for Serial device")
+                time.sleep(1)
                 # rospy.logerr(e)
                 # rospy.loginfo("Waiting for serial device")
                 # rospy.sleep(1)

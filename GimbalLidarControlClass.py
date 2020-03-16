@@ -1,9 +1,10 @@
 from Raspi_MotorHAT import Raspi_MotorHAT, Raspi_StepperMotor
 import numpy as np
-import time
 from rplidar import RPLidar
 from gpiozero import Button
 from circle_fit import least_squares_circle
+import time
+import json
 
 
 class LidarGimbal:
@@ -172,6 +173,37 @@ class LidarGimbal:
             print("Stopping due to error:", e)
         self.lidar.stop()
         return data
+
+    def lidarScanJSON(self):
+
+        t1 = time.time
+
+        X = []
+        Y = []
+
+        try:
+            for scan in self.lidar.iter_scans(max_buf_meas=0):
+                for data in scan:
+                    theta = data[1] * self.DEG2RAD
+                    R = data[2] * self.MM2INCH
+                    X_lidar = R * np.cos(theta)
+                    Y_lidar = R * np.sin(theta)
+
+                    X.append(X_lidar)
+                    Y.append(Y_lidar)
+
+                if time.time() - t1 > 5:
+
+                    ScanData = {"X": X,
+                                "Y": Y}
+
+                    with open('LidarScanData.txt', 'w') as json_file:
+                        json.dump(ScanData, json_file)
+
+                    break
+        except Exception as e:
+            print("Stopping due to error:", e)
+
 
     def debuglidar(self, path):
         outfile = open(path, 'w')

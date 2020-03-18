@@ -102,7 +102,7 @@ class LidarGimbal:
         PrevError = np.array([])
         # step = np.array([])
         i = 0
-        t1 =time.time()
+        t1 = time.time()
         try:
             for scan in self.lidar.iter_scans(max_buf_meas=0):
                 for data in scan:

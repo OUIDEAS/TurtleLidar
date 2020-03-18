@@ -77,3 +77,11 @@ class TurtleDriver:
                 Rspd = 0
                 self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
                 break
+
+if __name__ == "__main__":
+
+    print("Turtle Rover Motor Test")
+    time.sleep(3)
+
+    td = TurtleDriver()
+    td.debug()

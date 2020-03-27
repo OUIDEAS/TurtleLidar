@@ -1,10 +1,9 @@
-import numpy as np
-import time
-
-import frame
 from serial_comm import SerialComm
 from utils import power_to_motor_payload, reset_STM
-
+import frame
+import numpy as np
+import time
+import struct
 
 class TurtleDriver:
     def __init__(self, SerialPortName = "/dev/ttyAMA0", wheel_radius=0.06, wheel_track=0.33):
@@ -23,9 +22,9 @@ class TurtleDriver:
 
     def set_motors(self, msg):
         if len(msg) < 4:
-            # Add raise exception here at some point
             print("Wrong array size in motor command")
-            return
+            raise Exception("Wrong array size in motor command")
+            # return
 
         payload = []
         for p in msg:
@@ -36,10 +35,21 @@ class TurtleDriver:
         status = self.comm.proccess_command(f)
 
         if not status or not status == " OK \r\n":
-            # Add raise exception here at some point
-            print("Did not receive a valid response after a motor command")
+            # print("Did not receive a valid response after a motor command")
+            raise Exception("Did not receive a valid response after a motor command")
+
+    def battery_status(self):
+        status = self.comm.proccess_command(frame.battery())
+
+        if not status or not status.endswith("\r\n"):
+            # print("Could not get battery status")
+            raise Exception("Could not get battery status")
+        else:
+            battery_status = struct.unpack("<f", status[:4])[0]
+            return battery_status
 
     def send_motor_command(self, FrontLeft, FrontRight, RearLeft, RearRight):
+        # Input Range currently believed to have input range -1 to 1?
         wheel_speeds = [FrontLeft, FrontRight, RearLeft, RearRight]
         self.set_motors(wheel_speeds)
 
@@ -69,8 +79,8 @@ class TurtleDriver:
         t = time.time()
         while True:
             if time.time() - t < 3:
-                Lspd = 1
-                Rspd = -1
+                Lspd = .5
+                Rspd = -.5
                 self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
             else:
                 Lspd = 0
@@ -78,10 +88,12 @@ class TurtleDriver:
                 self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
                 break
 
+
 if __name__ == "__main__":
 
     print("Turtle Rover Motor Test")
-    time.sleep(3)
-
     td = TurtleDriver()
+    time.sleep(3)
+    print(td.battery_status())
+    time.sleep(2)
     td.debug()

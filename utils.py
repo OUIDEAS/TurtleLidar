@@ -32,6 +32,5 @@ def reset_STM():
     except RuntimeError:
         # rospy.logwarn("Could not reset STM on Turtle Hat. No access to GPIO pins. "
         #               "Try running as root!")
-        # NEED TO CHANGE TO EXCEPTIONS
         print("Could not reset STM on Turtle Hat. No access to GPIO pins. "
               "Try running as root!")

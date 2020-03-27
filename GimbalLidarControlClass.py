@@ -1,4 +1,5 @@
-from Raspi_MotorHAT import Raspi_MotorHAT, Raspi_StepperMotor
+# from Raspi_MotorHAT import Raspi_MotorHAT, Raspi_StepperMotor
+from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_StepperMotor
 import numpy as np
 from rplidar import RPLidar
 from gpiozero import Button
@@ -14,7 +15,7 @@ class LidarGimbal:
         self.MM2INCH = 1 / 25.4
 
         self.lidar = RPLidar(PortName)
-        self.mh = Raspi_MotorHAT(0x6F)
+        self.mh = Adafruit_MotorHAT()
 
         self.PanStepper = self.mh.getStepper(200, 2)
         self.PanStepper.setSpeed(10)
@@ -22,10 +23,10 @@ class LidarGimbal:
         self.TiltStepper.setSpeed(10)
 
     def turnOffMotors(self):
-        self.mh.getMotor(1).run(Raspi_MotorHAT.RELEASE)
-        self.mh.getMotor(2).run(Raspi_MotorHAT.RELEASE)
-        self.mh.getMotor(3).run(Raspi_MotorHAT.RELEASE)
-        self.mh.getMotor(4).run(Raspi_MotorHAT.RELEASE)
+        self.mh.getMotor(1).run(Adafruit_MotorHAT.RELEASE)
+        self.mh.getMotor(2).run(Adafruit_MotorHAT.RELEASE)
+        self.mh.getMotor(3).run(Adafruit_MotorHAT.RELEASE)
+        self.mh.getMotor(4).run(Adafruit_MotorHAT.RELEASE)
 
     def turnOffLidar(self):
         self.lidar.stop()
@@ -47,17 +48,18 @@ class LidarGimbal:
         # steps = steps*3
         if motor == "Pan":
             if steps > 0:
-                self.PanStepper.step(abs(steps), Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)
+                self.PanStepper.step(abs(steps), Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.MICROSTEP)
             else:
-                self.PanStepper.step(abs(steps), Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
+                self.PanStepper.step(abs(steps), Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.MICROSTEP)
         elif motor == "Tilt":
             if steps > 0:
-                self.TiltStepper.step(abs(steps), Raspi_MotorHAT.FORWARD, Raspi_MotorHAT.MICROSTEP)
+                self.TiltStepper.step(abs(steps), Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.MICROSTEP)
             else:
-                self.TiltStepper.step(abs(steps), Raspi_MotorHAT.BACKWARD, Raspi_MotorHAT.MICROSTEP)
+                self.TiltStepper.step(abs(steps), Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.MICROSTEP)
         else:
-            print("Invalid input for motor")
-            print("Valid inputs are Pan or Tilt")
+            # print("Invalid input for motor")
+            # print("Valid inputs are Pan or Tilt")
+            raise Exception("Invalid Inputs for Motor")
 
     def holdSteppers(self):
         self.steplidar('Pan', 1)

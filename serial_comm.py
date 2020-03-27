@@ -15,7 +15,8 @@ class SerialComm():
     def proccess_command(self, data):
         if not self.serial:
             # rospy.logerr("Serial communication not yet initialized")
-            print("Serial communication not yet initialized")
+            # print("Serial communication not yet initialized")
+            raise Exception("Serial Communication not yet initialized")
             return None
 
         with self.lock:
@@ -25,7 +26,7 @@ class SerialComm():
                 status = self.serial.readline()
             except serial.SerialException as e:
                 # rospy.logerr(e)
-                serial.print(e)
+                print(e)
                 return None
             else:
                 return status

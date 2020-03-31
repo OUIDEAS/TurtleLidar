@@ -5,6 +5,11 @@ import numpy as np
 import time
 import struct
 
+
+class TurtleException(Exception):
+    """Basic exception class"""
+
+
 class TurtleDriver:
     def __init__(self, SerialPortName = "/dev/ttyAMA0", wheel_radius=0.06, wheel_track=0.33):
 
@@ -22,8 +27,8 @@ class TurtleDriver:
 
     def set_motors(self, msg):
         if len(msg) < 4:
-            print("Wrong array size in motor command")
-            raise Exception("Wrong array size in motor command")
+            # print("Wrong array size in motor command")
+            raise TurtleException("Wrong array size in motor command")
             # return
 
         payload = []
@@ -36,14 +41,14 @@ class TurtleDriver:
 
         if not status or not status == " OK \r\n":
             # print("Did not receive a valid response after a motor command")
-            raise Exception("Did not receive a valid response after a motor command")
+            raise TurtleException("Did not receive a valid response after a motor command")
 
     def battery_status(self):
         status = self.comm.proccess_command(frame.battery())
 
         if not status or not status.endswith("\r\n"):
             # print("Could not get battery status")
-            raise Exception("Could not get battery status")
+            raise TurtleException("Could not get battery status")
         else:
             battery_status = struct.unpack("<f", status[:4])[0]
             return battery_status
@@ -60,10 +65,10 @@ class TurtleDriver:
 
     def drive(self):
         self.read_motor_command()
-        max = (2**16)/2  # assuming 16 bit joystick used as input
+        maxinpt = (2**16)/2  # assuming 16 bit joystick used as input
 
-        speed = self.forwardReverse / max * .75
-        turn = self.leftRight / max
+        speed = self.forwardReverse / maxinpt * .75
+        turn = self.leftRight / maxinpt
 
         Rspd = speed + turn
         Lspd = speed - turn

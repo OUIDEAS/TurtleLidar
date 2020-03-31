@@ -4,6 +4,10 @@ from threading import Lock
 import time
 
 
+class SerialCommException(Exception):
+    """Basic exception class"""
+
+
 class SerialComm():
     def __init__(self, device, baudrate=115200, timeout=1.0):
         self.device = device
@@ -16,7 +20,7 @@ class SerialComm():
         if not self.serial:
             # rospy.logerr("Serial communication not yet initialized")
             # print("Serial communication not yet initialized")
-            raise Exception("Serial Communication not yet initialized")
+            raise SerialCommException("Serial Communication not yet initialized")
             return None
 
         with self.lock:
@@ -25,7 +29,6 @@ class SerialComm():
             try:
                 status = self.serial.readline()
             except serial.SerialException as e:
-                # rospy.logerr(e)
                 print(e)
                 return None
             else:

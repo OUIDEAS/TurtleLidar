@@ -1,4 +1,3 @@
-# from Raspi_MotorHAT import Raspi_MotorHAT, Raspi_StepperMotor
 from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_StepperMotor
 import numpy as np
 from rplidar import RPLidar
@@ -9,7 +8,7 @@ import json
 
 
 class LidarGimbal:
-    def __init__(self, PortName):
+    def __init__(self, PortName = '/dev/ttyUSB0'):
 
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
@@ -45,7 +44,7 @@ class LidarGimbal:
         print(health)
 
     def steplidar(self, motor, steps):
-        # steps = steps*3
+        # steps = steps*16 # ???
         if motor == "Pan":
             if steps > 0:
                 self.PanStepper.step(abs(steps), Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.MICROSTEP)
@@ -220,9 +219,15 @@ class LidarGimbal:
             print("Stopping due to error:", e)
         self.lidar.stop()
 
+
 if __name__ == "__main__":
     lg = LidarGimbal('/dev/ttyUSB0')
     lg.holdSteppers()
+
+    print("Preparing to Zero")
+    time.sleep(3)
+    print("Zeroing")
+
     lg.zeroLidar(24)
     lg.debuglidar('debug.txt')
     time.sleep(2)

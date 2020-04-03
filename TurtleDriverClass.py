@@ -11,7 +11,7 @@ class TurtleException(Exception):
 
 
 class TurtleDriver:
-    def __init__(self, SerialPortName = "/dev/ttyAMA0", wheel_radius=0.06, wheel_track=0.33):
+    def __init__(self, SerialPortName="/dev/ttyAMA0", wheel_radius=0.06, wheel_track=0.33):
 
         self.serial_device = SerialPortName
 
@@ -33,7 +33,7 @@ class TurtleDriver:
 
         payload = []
         for p in msg:
-            value = power_to_motor_payload(p) # converts from -1 to 1, to 8 bit, 0-127, first bit is direction
+            value = power_to_motor_payload(p)  # converts from -1 to 1, to 8 bit, 0-127, first bit is direction
             payload.append(value)
 
         f = frame.motors(payload)
@@ -54,15 +54,14 @@ class TurtleDriver:
             return battery_status
 
     def send_motor_command(self, FrontLeft, FrontRight, RearLeft, RearRight):
-        # Input Range currently believed to be 0 - 127, first bit is direction
-        # 0 Forward, 1 backward
+        # Input range = -1 - 1
 
         wheel_speeds = [FrontLeft, FrontRight, RearLeft, RearRight]
         self.set_motors(wheel_speeds)
 
     def drive(self, forwardReverse, leftRight):
         maxinpt = (2**16)/2  # assuming 16 bit joystick used as input, -32768 - 32768
-        maxOutput = 1      # Its either -1 to 1, 0-255 or 0-127, IDK anymore. I figured it out, all are true
+        maxOutput = 1  # Its either -1 to 1, 0-255 or 0-127, IDK anymore. Figured it out, all are technically correct
 
         speed = forwardReverse / maxinpt * maxOutput * .75
         turn = leftRight / maxinpt * maxOutput * .75
@@ -90,7 +89,7 @@ class TurtleDriver:
         self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
 
     def spinTurtle(self):
-        spd = 75
+        # spd = 75
         t = time.time()
         while True:
             if time.time() - t < 3:

@@ -2,8 +2,9 @@ import numpy as np
 from rplidar import RPLidar, RPLidarException
 import time
 
+
 class FinishScan(Exception):
-    """Exception to end the for loop"""    
+    """Exception to end lidar scan for loops"""
 
 
 PortName = '/dev/ttyUSB0'

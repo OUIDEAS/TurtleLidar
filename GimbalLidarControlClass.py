@@ -4,15 +4,14 @@ from rplidar import RPLidar, RPLidarException
 from gpiozero import Button
 from circle_fit import least_squares_circle
 import time
-import json
 
 
 class FinishScan(Exception):
-    """Exception class to end the lidar scans"""
+    """Exception class to end the lidar scan"""
 
 
 class LidarGimbal:
-    def __init__(self, PortName = '/dev/ttyUSB0'):
+    def __init__(self, PortName='/dev/ttyUSB0'):
 
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
@@ -72,6 +71,8 @@ class LidarGimbal:
 
     def homeLidar(self, panPin, tiltPin):
         # This needs rewritten/finished
+        # Planning on redoing to use distance / proximity sensors
+        # Might need ot use arduino to have enough pins, and get access to analog sensors
         panbtn = Button(panPin)
         tiltbtn = Button(tiltPin)
 
@@ -88,7 +89,7 @@ class LidarGimbal:
         x = coord[:, 0]
         y = coord[:, 0]
         x = x - circle[0]
-        y = y - circle[0]
+        y = y - circle[1]
         r = np.sqrt(np.square(x)+np.square(y))
         # remove outliers at some point
         error = R_expected - r
@@ -127,8 +128,8 @@ class LidarGimbal:
                         # step = np.append(step, [i])
                         t1 = time.time()
                     else:
-                        min = np.argmin(PrevError)
-                        FinalStep = min - i
+                        minVal = np.argmin(PrevError)
+                        FinalStep = minVal - i
                         print(FinalStep)
                         self.steplidar("Pan", FinalStep)
                         print("Lidar Zeroed")
@@ -141,7 +142,7 @@ class LidarGimbal:
         self.lidar.stop()
         time.sleep(.5)
 
-    def lidarScanWrite(self, path='lidarScan.txt', tries=100):
+    def lidarScanWrite(self, path='lidarScan.txt', scanLength=5, tries=100):
         outfile = open(path, 'w')
         t1 = time.time()
 
@@ -150,7 +151,7 @@ class LidarGimbal:
                 for measurment in self.lidar.iter_measurments():
                     line = '\t'.join(str(v) for v in measurment)
                     outfile.write(line + '\n')
-                    if time.time() - t1 > 5:
+                    if time.time() - t1 > scanLength:
                         raise FinishScan("Scan Complete")
 
             except RPLidarException as e:
@@ -170,14 +171,21 @@ class LidarGimbal:
         self.lidar.stop()
         time.sleep(.5)
 
-    def lidarScan(self, tries=100):
-        data = []
+    def lidarScan(self, scanLength=5, tries=100):
+        ang = []
+        dis = []
+
         t1 = time.time()
         for i in range(tries):
             try:
                 for scan in self.lidar.iter_measurments():
-                    data.append(np.array(scan))
-                    if time.time() - t1 > 5:
+                    for data in scan:
+                        theta = data[2]
+                        R = data[3]
+
+                        ang.append(theta)
+                        dis.append(R)
+                    if time.time() - t1 > abs(scanLength):
                         raise FinishScan("Scan Complete")
 
             except RPLidarException as e:
@@ -189,51 +197,7 @@ class LidarGimbal:
                 break
         self.lidar.stop()
         time.sleep(.5)
-        return data
-
-    def lidarScanJSON(self):
-
-        t1 = time.time
-
-        X = []
-        Y = []
-
-        try:
-            for scan in self.lidar.iter_scans(max_buf_meas=0):
-                for data in scan:
-                    theta = data[1] * self.DEG2RAD
-                    R = data[2] * self.MM2INCH
-                    X_lidar = R * np.cos(theta)
-                    Y_lidar = R * np.sin(theta)
-
-                    X.append(X_lidar)
-                    Y.append(Y_lidar)
-
-                if time.time() - t1 > 5:
-
-                    ScanData = {"X": X,
-                                "Y": Y}
-
-                    with open('LidarScanData.txt', 'w') as json_file:
-                        json.dump(ScanData, json_file)
-
-                    break
-        except Exception as e:
-            print("Stopping due to error:", e)
-
-
-    def debuglidar(self, path):
-        outfile = open(path, 'w')
-        try:
-            t1 = time.time()
-            for measurment in self.lidar.iter_measurments():
-                line = '\t'.join(str(v) for v in measurment)
-                outfile.write(line + '\n')
-                if time.time() - t1 > 5:
-                    break
-        except Exception as e:
-            print("Stopping due to error:", e)
-        self.lidar.stop()
+        return ang, dis
 
 
 if __name__ == "__main__":
@@ -245,7 +209,7 @@ if __name__ == "__main__":
     print("Zeroing")
 
     lg.zeroLidar(24)
-    lg.debuglidar('debug.txt')
+    lg.lidarScanWrite('debug.txt')
     time.sleep(2)
     lg.shutdown()
     quit()

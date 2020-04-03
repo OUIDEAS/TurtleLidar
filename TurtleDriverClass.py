@@ -33,7 +33,7 @@ class TurtleDriver:
 
         payload = []
         for p in msg:
-            value = power_to_motor_payload(p)
+            value = power_to_motor_payload(p) # converts from -1 to 1, to 8 bit, 0-127, first bit is direction
             payload.append(value)
 
         f = frame.motors(payload)
@@ -54,43 +54,56 @@ class TurtleDriver:
             return battery_status
 
     def send_motor_command(self, FrontLeft, FrontRight, RearLeft, RearRight):
-        # Input Range currently believed to have input range -1 to 1?
+        # Input Range currently believed to be 0 - 127, first bit is direction
+        # 0 Forward, 1 backward
+
         wheel_speeds = [FrontLeft, FrontRight, RearLeft, RearRight]
         self.set_motors(wheel_speeds)
 
-    def read_motor_command(self):
-        # Currently assuming two inputs, likely from xbox controller through browser
-        self.forwardReverse = 0
-        self.leftRight = 0
+    def drive(self, forwardReverse, leftRight):
+        maxinpt = (2**16)/2  # assuming 16 bit joystick used as input, -32768 - 32768
+        maxOutput = 1      # Its either -1 to 1, 0-255 or 0-127, IDK anymore. I figured it out, all are true
 
-    def drive(self):
-        self.read_motor_command()
-        maxinpt = (2**16)/2  # assuming 16 bit joystick used as input
-
-        speed = self.forwardReverse / maxinpt * .75
-        turn = self.leftRight / maxinpt
+        speed = forwardReverse / maxinpt * maxOutput * .75
+        turn = leftRight / maxinpt * maxOutput * .75
 
         Rspd = speed + turn
         Lspd = speed - turn
 
-        if abs(Rspd) > max:
-            Rspd = max * np.sign(Rspd)
-        if abs(Lspd) > max:
-            Rspd = max * np.sign(Lspd)
+        # Limiting Output
+        if abs(Rspd) > maxOutput:
+            Rspd = maxOutput * np.sign(Rspd)
+        if abs(Lspd) > maxOutput:
+            Rspd = maxOutput * np.sign(Lspd)
+
+        # Formatting to correct output
+        # if Rspd >= 0:
+        #     Rspd = int(abs(Rspd)) | (0 << 7)
+        # else:
+        #     Rspd = int(abs(Rspd)) | (1 << 7)
+        #
+        # if Lspd >= 0:
+        #     Lspd = int(abs(Lspd)) | (0 << 7)
+        # else:
+        #     Lspd = int(abs(Lspd)) | (1 << 7)
 
         self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
 
-    def debug(self):
+    def spinTurtle(self):
+        spd = 75
         t = time.time()
         while True:
             if time.time() - t < 3:
                 Lspd = .5
                 Rspd = -.5
+                # Lspd = int(abs(spd)) | (0 << 7)
+                # Rspd = int(abs(spd)) | (1 << 7)
                 self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
             else:
                 Lspd = 0
                 Rspd = 0
                 self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
+                time.sleep(.2)
                 break
 
 
@@ -101,4 +114,4 @@ if __name__ == "__main__":
     time.sleep(3)
     print(td.battery_status())
     time.sleep(2)
-    td.debug()
+    td.spinTurtle()

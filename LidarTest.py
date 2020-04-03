@@ -6,7 +6,6 @@ class FinishScan(Exception):
     """Exception to end the for loop"""    
 
 
-
 PortName = '/dev/ttyUSB0'
 path = 'test.txt'
 
@@ -19,11 +18,10 @@ tries = 100
 for i in range(tries):
     try:
         for measurment in lidar.iter_measurments():
-            for data in measurment:
-                line = '\t'.join(str(measurment))
-                outfile.write(line + '\n')
-                if time.time() - t1 > 5:
-                    raise FinishScan("Scan Complete")
+            line = '\t'.join(str(v) for v in measurment)
+            outfile.write(line + '\n')
+            if time.time() - t1 > 5:
+                raise FinishScan("Scan Complete")
     except RPLidarException as e:
         print("Retrying due to error:", e)
         continue

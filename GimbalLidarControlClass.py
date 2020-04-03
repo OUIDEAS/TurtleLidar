@@ -1,10 +1,14 @@
 from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_StepperMotor
 import numpy as np
-from rplidar import RPLidar
+from rplidar import RPLidar, RPLidarException
 from gpiozero import Button
 from circle_fit import least_squares_circle
 import time
 import json
+
+
+class FinishScan(Exception):
+    """Exception class to end the lidar scans"""
 
 
 class LidarGimbal:
@@ -126,53 +130,65 @@ class LidarGimbal:
                         min = np.argmin(PrevError)
                         FinalStep = min - i
                         print(FinalStep)
-                        self.steplidar("Pan",FinalStep)
+                        self.steplidar("Pan", FinalStep)
                         print("Lidar Zeroed")
                         break
-        except Exception as e:
+        except RPLidarException as e:
             print("Stopping due to error:", e)
-
         except KeyboardInterrupt:
-            print('Stoping.')
+            print('Stopping due to keyboard interrupt')
+
         self.lidar.stop()
+        time.sleep(.5)
 
-    def lidarScanWrite(self, path, NumberOfScans):
+    def lidarScanWrite(self, path='lidarScan.txt', tries=100):
         outfile = open(path, 'w')
-        i = 0
+        t1 = time.time()
 
-        try:
-            for measurment in self.lidar.iter_measurments():
-                for data in measurment:
-                    if data[0] == True:
-                        i += 1
-                    line = '\t'.join(str(measurment))
+        for i in range(tries):
+            try:
+                for measurment in self.lidar.iter_measurments():
+                    line = '\t'.join(str(v) for v in measurment)
                     outfile.write(line + '\n')
-                if i > NumberOfScans:
-                    break
+                    if time.time() - t1 > 5:
+                        raise FinishScan("Scan Complete")
 
-        except Exception as e:
-            print("Stopping due to error:", e)
+            except RPLidarException as e:
+                print("Retrying due to error:", e)
+                continue
+            except FinishScan as e:
+                print(e)
+                break
+            except KeyboardInterrupt:
+                print("Keyboard Interrupt detected")
+                break
+            else:
+                print("Shouldn't have got here, I think")
+                break
 
         outfile.close()
         self.lidar.stop()
+        time.sleep(.5)
 
-    def lidarScan(self, NumberOfScans):
-        i = 0
+    def lidarScan(self, tries=100):
         data = []
         t1 = time.time()
-        try:
-            for scan in self.lidar.iter_measurments():
-                data.append(np.array(scan))
-                for scanData in scan:
-                    if scanData[0] == 1:
-                        i += 1
-                # if i > NumberOfScans:
-                #     break
-                if time.time() - t1 > 5:
-                    break
-        except Exception as e:
-            print("Stopping due to error:", e)
+        for i in range(tries):
+            try:
+                for scan in self.lidar.iter_measurments():
+                    data.append(np.array(scan))
+                    if time.time() - t1 > 5:
+                        raise FinishScan("Scan Complete")
+
+            except RPLidarException as e:
+                print("Retrying due to error:", e)
+                continue
+            except FinishScan as e:
+                break
+            else:
+                break
         self.lidar.stop()
+        time.sleep(.5)
         return data
 
     def lidarScanJSON(self):

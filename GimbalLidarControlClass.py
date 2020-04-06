@@ -1,13 +1,17 @@
-# from Raspi_MotorHAT import Raspi_MotorHAT, Raspi_StepperMotor
 from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_StepperMotor
 import numpy as np
-import time
-from rplidar import RPLidar
+from rplidar import RPLidar, RPLidarException
 from gpiozero import Button
 from circle_fit import least_squares_circle
+import time
 
-class LidarGimbal():
-    def __init__(self, PortName):
+
+class FinishScan(Exception):
+    """Exception class to end the lidar scan"""
+
+
+class LidarGimbal:
+    def __init__(self, PortName='/dev/ttyUSB0'):
 
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
@@ -43,7 +47,7 @@ class LidarGimbal():
         print(health)
 
     def steplidar(self, motor, steps):
-        # steps = steps*3
+        # steps = steps*16 # ???
         if motor == "Pan":
             if steps > 0:
                 self.PanStepper.step(abs(steps), Adafruit_MotorHAT.FORWARD, Adafruit_MotorHAT.MICROSTEP)
@@ -55,8 +59,9 @@ class LidarGimbal():
             else:
                 self.TiltStepper.step(abs(steps), Adafruit_MotorHAT.BACKWARD, Adafruit_MotorHAT.MICROSTEP)
         else:
-            print("Invalid input for motor")
-            print("Valid inputs are Pan or Tilt")
+            # print("Invalid input for motor")
+            # print("Valid inputs are Pan or Tilt")
+            raise Exception("Invalid Inputs for Motor")
 
     def holdSteppers(self):
         self.steplidar('Pan', 1)
@@ -66,6 +71,8 @@ class LidarGimbal():
 
     def homeLidar(self, panPin, tiltPin):
         # This needs rewritten/finished
+        # Planning on redoing to use distance / proximity sensors
+        # Might need ot use arduino to have enough pins, and get access to analog sensors
         panbtn = Button(panPin)
         tiltbtn = Button(tiltPin)
 
@@ -82,7 +89,7 @@ class LidarGimbal():
         x = coord[:, 0]
         y = coord[:, 0]
         x = x - circle[0]
-        y = y - circle[0]
+        y = y - circle[1]
         r = np.sqrt(np.square(x)+np.square(y))
         # remove outliers at some point
         error = R_expected - r
@@ -101,7 +108,7 @@ class LidarGimbal():
         PrevError = np.array([])
         # step = np.array([])
         i = 0
-        t1 =time.time()
+        t1 = time.time()
         try:
             for scan in self.lidar.iter_scans(max_buf_meas=0):
                 for data in scan:
@@ -121,76 +128,88 @@ class LidarGimbal():
                         # step = np.append(step, [i])
                         t1 = time.time()
                     else:
-                        min = np.argmin(PrevError)
-                        FinalStep = min - i
+                        minVal = np.argmin(PrevError)
+                        FinalStep = minVal - i
                         print(FinalStep)
-                        self.steplidar("Pan",FinalStep)
+                        self.steplidar("Pan", FinalStep)
                         print("Lidar Zeroed")
                         break
-        except Exception as e:
+        except RPLidarException as e:
             print("Stopping due to error:", e)
-
         except KeyboardInterrupt:
-            print('Stoping.')
+            print('Stopping due to keyboard interrupt')
+
         self.lidar.stop()
+        time.sleep(.5)
 
-    def lidarScanWrite(self, path, NumberOfScans):
+    def lidarScanWrite(self, path='lidarScan.txt', scanLength=5, tries=100):
         outfile = open(path, 'w')
-        i = 0
+        t1 = time.time()
 
-        try:
-            for measurment in self.lidar.iter_measurments():
-                for data in measurment:
-                    if data[0] == True:
-                        i += 1
-                    line = '\t'.join(str(measurment))
+        for i in range(tries):
+            try:
+                for measurment in self.lidar.iter_measurments():
+                    line = '\t'.join(str(v) for v in measurment)
                     outfile.write(line + '\n')
-                if i > NumberOfScans:
-                    break
+                    if time.time() - t1 > scanLength:
+                        raise FinishScan("Scan Complete")
 
-        except Exception as e:
-            print("Stopping due to error:", e)
+            except RPLidarException as e:
+                print("Retrying due to error:", e)
+                continue
+            except FinishScan as e:
+                print(e)
+                break
+            except KeyboardInterrupt:
+                print("Keyboard Interrupt detected")
+                break
+            else:
+                print("Shouldn't have got here, I think")
+                break
 
         outfile.close()
         self.lidar.stop()
+        time.sleep(.5)
 
-    def lidarScan(self, NumberOfScans):
-        i = 0
-        data = []
+    def lidarScan(self, scanLength=5, tries=100):
+        ang = []
+        dis = []
+
         t1 = time.time()
-        try:
-            for scan in self.lidar.iter_measurments():
-                data.append(np.array(scan))
-                for scanData in scan:
-                    if scanData[0] == 1:
-                        i += 1
-                # if i > NumberOfScans:
-                #     break
-                if time.time() - t1 > 5:
-                    break
-        except Exception as e:
-            print("Stopping due to error:", e)
-        self.lidar.stop()
-        return data
+        for i in range(tries):
+            try:
+                for scan in self.lidar.iter_measurments():
+                    for data in scan:
+                        theta = data[2]
+                        R = data[3]
 
-    def debuglidar(self, path):
-        outfile = open(path, 'w')
-        try:
-            t1 = time.time()
-            for measurment in self.lidar.iter_measurments():
-                line = '\t'.join(str(v) for v in measurment)
-                outfile.write(line + '\n')
-                if time.time() - t1 > 5:
-                    break
-        except Exception as e:
-            print("Stopping due to error:", e)
+                        ang.append(theta)
+                        dis.append(R)
+                    if time.time() - t1 > abs(scanLength):
+                        raise FinishScan("Scan Complete")
+
+            except RPLidarException as e:
+                print("Retrying due to error:", e)
+                continue
+            except FinishScan as e:
+                break
+            else:
+                break
         self.lidar.stop()
+        time.sleep(.5)
+        return ang, dis
+
 
 if __name__ == "__main__":
     lg = LidarGimbal('/dev/ttyUSB0')
     lg.holdSteppers()
+
+    print("Preparing to Zero")
+    time.sleep(3)
+    print("Zeroing")
+
     lg.zeroLidar(24)
-    lg.debuglidar('debug.txt')
+    lg.lidarScanWrite('debug.txt')
     time.sleep(2)
     lg.shutdown()
     quit()

@@ -3,7 +3,6 @@ import numpy as np
 import time
 
 Port = '/dev/ttyUSB0'
-n = 50
 
 lg = LidarGimbal(Port)
 lg.lidarHealth()
@@ -17,21 +16,21 @@ try:
     print("...Beginning Scan")
 
     lg.steplidar('Pan', -4)
-    lg.debuglidar('Scan1.txt')
+    lg.lidarScanWrite('Scan1.txt')
     lg.steplidar('Pan', 1)
-    lg.debuglidar('Scan2.txt')
+    lg.lidarScanWrite('Scan2.txt')
     lg.steplidar('Pan', 1)
-    lg.debuglidar('Scan3.txt')
+    lg.lidarScanWrite('Scan3.txt')
     lg.steplidar('Pan', 1)
-    lg.debuglidar('Scan4.txt')
+    lg.lidarScanWrite('Scan4.txt')
     lg.steplidar('Pan', 1)
-    lg.debuglidar('Scan5.txt')
+    lg.lidarScanWrite('Scan5.txt')
     lg.steplidar('Pan', 1)
-    lg.debuglidar('Scan6.txt')
+    lg.lidarScanWrite('Scan6.txt')
     lg.steplidar('Pan', 1)
-    lg.debuglidar('Scan7.txt')
+    lg.lidarScanWrite('Scan7.txt')
 
 except KeyboardInterrupt:
-    print('Stoping.')
+    print('Stopping.')
 
 lg.shutdown()

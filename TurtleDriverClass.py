@@ -1,9 +1,14 @@
 from serial_comm import SerialComm
-from utils import power_to_motor_payload, reset_STM
+from utils import power_to_motor_payload, reset_STM, servo_angle_to_duty, estimateError
 import frame
 import numpy as np
+from rplidar import RPLidar, RPLidarException
 import time
 import struct
+
+
+class FinishScan(Exception):
+    """Exception class to end the lidar scan"""
 
 
 class TurtleException(Exception):
@@ -11,19 +16,34 @@ class TurtleException(Exception):
 
 
 class TurtleDriver:
-    def __init__(self, SerialPortName="/dev/ttyAMA0", wheel_radius=0.06, wheel_track=0.33):
+    def __init__(self, SerialPortName="/dev/ttyAMA0", LidarPortName='/dev/ttyUSB0',
+                 min_ang=-90, max_ang=90, min_duty=2400, max_duty=4800):
 
+        # Turtle Shield
         self.serial_device = SerialPortName
-
         self.comm = SerialComm(self.serial_device)
         reset_STM()
         self.comm.connect()
+        time.sleep(.3)  # No idea if needed
 
-        self.wheel_radius = wheel_radius
-        self.wheel_track = wheel_track
+        # Servo Motor
+        self.servo_min_angle = min_ang
+        self.servo_max_angle = max_ang
+        self.servo_min_duty = min_duty
+        self.servo_max_duty = max_duty
 
-        self.forwardReverse = 0
-        self.leftRight = 0
+        self.servo_angle = 0
+        self.set_servo(1, self.servo_angle)
+
+        # Lidar
+        self.DEG2RAD = np.pi / 180
+        self.MM2INCH = 1 / 25.4
+
+        self.lidar = RPLidar(LidarPortName)
+
+    def shutdownLidar(self):
+        self.lidar.stop_motor()
+        self.lidar.disconnect()
 
     def set_motors(self, msg):
         if len(msg) < 4:
@@ -42,6 +62,18 @@ class TurtleDriver:
         if not status or not status == " OK \r\n":
             # print("Did not receive a valid response after a motor command")
             raise TurtleException("Did not receive a valid response after a motor command")
+
+    def set_servo(self, channel, msg):
+        angle = msg
+        duty = servo_angle_to_duty(angle, self.servo_min_angle, self.servo_max_angle,
+                                   self.servo_min_duty, self.servo_max_duty)
+
+        f = frame.servo(channel, duty)
+        status = self.comm.proccess_command(f)
+
+        if not status or not status == " OK \r\n":
+            # rospy.logerr("Did not receive a valid response after servo command")
+            raise TurtleException("Did not receive a valid response after servo command")
 
     def battery_status(self):
         status = self.comm.proccess_command(frame.battery())
@@ -104,6 +136,120 @@ class TurtleDriver:
                 self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
                 time.sleep(.2)
                 break
+
+    def steplidar(self, motor, steps):
+        self.servo_angle += steps
+
+        if self.servo_angle > self.servo_max_angle:
+            self.servo_angle = self.servo_max_angle
+        elif self.servo_angle < self.servo_min_angle:
+            self.servo_angle = self.servo_min_angle
+
+        self.set_servo(motor, self.servo_angle)
+
+    def zeroLidar(self, Pipe_diamiter):
+        self.servo_angle = 0
+        self.set_servo(1, self.servo_angle)
+
+        self.steplidar(1, -20)
+
+        print("Zeroing Lidar")
+
+        coord = np.array([0, 0])
+        PrevError = np.array([])
+
+        i = 0
+        t1 = time.time()
+        try:
+            for scan in self.lidar.iter_scans(max_buf_meas=0):
+                for data in scan:
+                    theta = data[1] * self.DEG2RAD
+                    R = data[2] * self.MM2INCH
+                    X_lidar = R * np.cos(theta)
+                    Y_lidar = R * np.sin(theta)
+                    coord = np.vstack((coord, [X_lidar, Y_lidar]))
+                if time.time() - t1 > 5:
+                    if i < 10:
+                        Error = estimateError(coord, Pipe_diamiter/2)
+                        print(Error)
+                        coord = np.array([0, 0])
+                        PrevError = np.append(PrevError, Error)
+                        self.steplidar(1, 2)
+                        i += 1
+                        # step = np.append(step, [i])
+                        t1 = time.time()
+                    else:
+                        minVal = np.argmin(PrevError)
+                        FinalStep = minVal - i
+                        print(FinalStep)
+                        self.steplidar(1, FinalStep*2)
+                        print("Lidar Zeroed")
+                        break
+        except RPLidarException as e:
+            print("Stopping due to error:", e)
+        except KeyboardInterrupt:
+            print('Stopping due to keyboard interrupt')
+
+        self.lidar.stop()
+        time.sleep(.5)
+
+    def lidarScanWrite(self, path='lidarScan.txt', scanLength=5, tries=100):
+        outfile = open(path, 'w')
+        t1 = time.time()
+
+        for i in range(tries):
+            try:
+                for measurment in self.lidar.iter_measurments():
+                    line = '\t'.join(str(v) for v in measurment)
+                    outfile.write(line + '\n')
+                    if time.time() - t1 > scanLength:
+                        raise FinishScan("Scan Complete")
+
+            except RPLidarException as e:
+                print("Retrying due to error:", e)
+                continue
+            except FinishScan as e:
+                print(e)
+                break
+            except KeyboardInterrupt:
+                print("Keyboard Interrupt detected")
+                break
+            else:
+                print("Shouldn't have got here, I think")
+                break
+
+        outfile.close()
+        self.lidar.stop()
+        time.sleep(.5)
+
+    def lidarScan(self, scanLength=5, tries=100):
+        ang = []
+        dis = []
+
+        t1 = time.time()
+        for i in range(tries):
+            try:
+                for scan in self.lidar.iter_measurments():
+                    for data in scan:
+                        theta = data[2]
+                        R = data[3]
+
+                        ang.append(theta)
+                        dis.append(R)
+                    if time.time() - t1 > abs(scanLength):
+                        raise FinishScan("Scan Complete")
+
+            except RPLidarException as e:
+                print("Retrying due to error:", e)
+                continue
+            except FinishScan as e:
+                print(e)
+                break
+            else:
+                break
+        self.lidar.stop()
+        time.sleep(.5)
+        return ang, dis
 
 
 if __name__ == "__main__":

@@ -5,4 +5,5 @@ print("Turtle Rover Motor Test")
 time.sleep(3)
 
 td = TurtleDriver()
-td.debug()
+td.spinTurtle()
+print("done")

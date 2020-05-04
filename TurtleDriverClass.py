@@ -85,6 +85,15 @@ class TurtleDriver:
             battery_status = struct.unpack("<f", status[:4])[0]
             return battery_status
 
+    def publish_firmware_ver(self):
+        firmware_ver = self.comm.proccess_command(frame.firmware_ver())
+
+        if not firmware_ver or not firmware_ver.endswith("\r\n"):
+            raise TurtleException("Could not get firmware version")
+        else:
+            firmware_ver = firmware_ver[:-2]
+            print(firmware_ver)
+
     def send_motor_command(self, FrontLeft, FrontRight, RearLeft, RearRight):
         # Input range = -1 - 1
 
@@ -92,6 +101,11 @@ class TurtleDriver:
         self.set_motors(wheel_speeds)
 
     def drive(self, forwardReverse, leftRight):
+        # Inputs:
+        #       forwardReverse: Range of -32768 - 32768, controls speed robot drives at
+        #       leftRight: Range of -32768 - 32768, controls differential speed
+        # Outputs:
+        #       none
         maxinpt = (2**16)/2  # assuming 16 bit joystick used as input, -32768 - 32768
         maxOutput = 1  # Its either -1 to 1, 0-255 or 0-127, IDK anymore. Figured it out, all are technically correct
 
@@ -223,6 +237,13 @@ class TurtleDriver:
         time.sleep(.5)
 
     def lidarScan(self, scanLength=5, tries=100):
+        # Inputs:
+        #        scanLength: length of time in seconds that the scan will take, default is 5 seconds
+        #        tries: number of tries for successful lidar scan, default is 100
+        # Outputs:
+        #        ang: list of angles that lidar scanned at
+        #        dis: list of distances that lidar scanned at
+
         ang = []
         dis = []
 

@@ -58,6 +58,7 @@ class TurtleDriver:
 
         f = frame.motors(payload)
         status = self.comm.proccess_command(f)
+        status = status.decode('utf-8')
 
         if not status or not status == " OK \r\n":
             # print("Did not receive a valid response after a motor command")
@@ -70,6 +71,7 @@ class TurtleDriver:
 
         f = frame.servo(channel, duty)
         status = self.comm.proccess_command(f)
+        status = status.decode('utf-8')
 
         if not status or not status == " OK \r\n":
             # rospy.logerr("Did not receive a valid response after servo command")
@@ -77,6 +79,7 @@ class TurtleDriver:
 
     def battery_status(self):
         status = self.comm.proccess_command(frame.battery())
+        status = status.decode('utf-8')
 
         if not status or not status.endswith("\r\n"):
             # print("Could not get battery status")
@@ -87,6 +90,7 @@ class TurtleDriver:
 
     def publish_firmware_ver(self):
         firmware_ver = self.comm.proccess_command(frame.firmware_ver())
+        firmware_ver = firmware_ver.decode("utf-8")
 
         if not firmware_ver or not firmware_ver.endswith("\r\n"):
             raise TurtleException("Could not get firmware version")

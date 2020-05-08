@@ -106,15 +106,20 @@ class TurtleDriver:
 
     def drive(self, forwardReverse, leftRight):
         # Inputs:
-        #       forwardReverse: Range of -32768 - 32768, controls speed robot drives at
-        #       leftRight: Range of -32768 - 32768, controls differential speed
+        #       forwardReverse: Range of -1 to 1, controls speed robot drives at
+        #       leftRight: Range of -1 to 1, controls differential speed
         # Outputs:
         #       none
-        maxinpt = (2**16)/2  # assuming 16 bit joystick used as input, -32768 - 32768
-        maxOutput = 1  # Its either -1 to 1, 0-255 or 0-127, IDK anymore. Figured it out, all are technically correct
 
-        speed = forwardReverse / maxinpt * maxOutput * .75
-        turn = leftRight / maxinpt * maxOutput * .75
+        if abs(forwardReverse) > 1:
+            forwardReverse = 1 * np.sign(forwardReverse)
+        if abs(leftRight) > 1:
+            leftRight = 1 * np.sign(leftRight)
+
+        maxOutput = 1
+
+        speed = forwardReverse * .75
+        turn = leftRight * .75
 
         Rspd = speed + turn
         Lspd = speed - turn
@@ -154,6 +159,10 @@ class TurtleDriver:
                 self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
                 time.sleep(.2)
                 break
+
+    def stopTurtle(self):
+        # Sends command to stop motors
+        self.send_motor_command(0, 0, 0, 0)
 
     def steplidar(self, motor, steps):
         self.servo_angle += steps

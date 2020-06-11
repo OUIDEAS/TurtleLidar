@@ -7,13 +7,21 @@ port = "5001"
 
 # Creates a socket instance
 context = zmq.Context()
+# Sub Socket
 socket = context.socket(zmq.SUB)
+# Pub Socket
+pub = context.socket(zmq.PUB)
 
 # Binds the socket to a predefined port on localhost
 socket.bind(f"tcp://{host}:{port}")
 
+# Pub connect
+pub.connect("tcp://{}:{}".format("127.0.0.1", "5002"))
+time.sleep(1)
+
 # Subscribes to the coffee maker and toaster topic
 socket.subscribe("motors")
+socket.subscribe("Turtle")
 
 poller = zmq.Poller()
 poller.register(socket, zmq.POLLIN)
@@ -42,6 +50,13 @@ while True:
             else:
                 motorBuffer.append([status[0][0], status[0][1]])
 
+        if topic == "Turtle":
+            d = "Data"
+            data = ([1, 2, 3], [4, 5, 6])
+            pub.send_string(d, flags=zmq.SNDMORE)
+            pub.send_pyobj(data)
+            print("sent")
+
     if time.time()-t >= 3:
         # Just to make sure script is working
         print(time.time()-t)
@@ -54,4 +69,3 @@ while True:
         else:
             print(motorBuffer)
             motorBuffer.pop(0)
-

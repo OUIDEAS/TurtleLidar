@@ -1,4 +1,4 @@
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_StepperMotor
+from Adafruit_MotorHAT import Adafruit_MotorHAT#, Adafruit_StepperMotor
 import numpy as np
 from rplidar import RPLidar, RPLidarException
 from gpiozero import Button

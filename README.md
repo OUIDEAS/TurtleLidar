@@ -1,6 +1,6 @@
 # Turtle Rover Lidar Pipe Scanner
 
-Repository for Pipe SLAM without the SLAM
+Repository for Turtle Rover pipe scanning robot with lidar gimbal
  
 * [TurtleMain.py](TurtleMain.py) is the main script where functions are called from. Commands for the robot come into this script from the flask web server through pyzmq publishers and subscribers.
 * [TurtleDriverClass.py](TurtleDriverClass.py) is the main class where functions for the turtle rover and lidar gimbal are found. Functions include handling motor commands for moving the rover and, zeroing the lidar within the pipe, and scanning the pipe with the lidar. 

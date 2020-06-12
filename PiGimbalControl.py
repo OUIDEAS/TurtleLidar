@@ -1,18 +1,15 @@
-from GimbalLidarControlClass import LidarGimbal
+from TurtleDriverClass import TurtleDriver
 import numpy as np
 import time
 
-lg = LidarGimbal()
-lg.holdSteppers()
+td = TurtleDriver()
+td.initServo()
 
 while True:
     pan = int(input("Pan how many steps: "))
-    lg.steplidar("Pan", pan)
-
-    tilt = int(input("Tilt how many steps: "))
-    lg.steplidar("Tilt", tilt)
+    td.steplidar(1, pan)
 
     stop = int(input("Type 7 to stop: "))
     if stop == 7:
-        lg.shutdown()
+        td.shutdownLidar()
         break

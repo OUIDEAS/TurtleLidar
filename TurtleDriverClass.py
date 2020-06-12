@@ -16,7 +16,7 @@ class TurtleException(Exception):
 
 
 class TurtleDriver:
-    def __init__(self, SerialPortName="/dev/ttyAMA0", LidarPortName='/dev/ttyUSB0',
+    def __init__(self, SerialPortName="/dev/ttyS0", LidarPortName='/dev/ttyUSB0',
                  min_ang=-90, max_ang=90, min_duty=2400, max_duty=4800):
 
         # Turtle Shield
@@ -33,13 +33,16 @@ class TurtleDriver:
         self.servo_max_duty = max_duty
 
         self.servo_angle = 0
-        self.set_servo(1, self.servo_angle)
 
         # Lidar
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
 
         self.lidar = RPLidar(LidarPortName)
+
+    def initServo(self):
+        self.servo_angle = 0
+        self.set_servo(1, self.servo_angle)
 
     def shutdownLidar(self):
         self.lidar.stop_motor()
@@ -96,8 +99,8 @@ class TurtleDriver:
             raise TurtleException("Could not get firmware version")
         else:
             firmware_ver = firmware_ver[:-2]
-            print(firmware_ver)
-
+            # print(firmware_ver)
+            return firmware_ver
     def send_motor_command(self, FrontLeft, FrontRight, RearLeft, RearRight):
         # Input range = -1 - 1
 
@@ -130,17 +133,6 @@ class TurtleDriver:
         if abs(Lspd) > maxOutput:
             Rspd = maxOutput * np.sign(Lspd)
 
-        # Formatting to correct output
-        # if Rspd >= 0:
-        #     Rspd = int(abs(Rspd)) | (0 << 7)
-        # else:
-        #     Rspd = int(abs(Rspd)) | (1 << 7)
-        #
-        # if Lspd >= 0:
-        #     Lspd = int(abs(Lspd)) | (0 << 7)
-        # else:
-        #     Lspd = int(abs(Lspd)) | (1 << 7)
-
         self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
 
     def spinTurtle(self):
@@ -150,8 +142,6 @@ class TurtleDriver:
             if time.time() - t < 3:
                 Lspd = .5
                 Rspd = -.5
-                # Lspd = int(abs(spd)) | (0 << 7)
-                # Rspd = int(abs(spd)) | (1 << 7)
                 self.send_motor_command(Lspd, Rspd, Lspd, Rspd)
             else:
                 Lspd = 0
@@ -257,6 +247,9 @@ class TurtleDriver:
         #        ang: list of angles that lidar scanned at
         #        dis: list of distances that lidar scanned at
 
+        self.zeroLidar(24)  # Need to find pipe Diameter
+        time.sleep(1)
+
         ang = []
         dis = []
 
@@ -294,3 +287,4 @@ if __name__ == "__main__":
     print(td.battery_status())
     time.sleep(2)
     td.spinTurtle()
+    print("done")

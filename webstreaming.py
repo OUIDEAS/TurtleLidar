@@ -15,6 +15,7 @@ import datetime
 import imutils
 import time
 import cv2
+import zmq
 
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
@@ -30,6 +31,18 @@ app = Flask(__name__)
 #vs = VideoStream(usePiCamera=1).start()
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
+
+# ZMQ PubSub
+host = "127.0.0.1"
+port = "5001"
+
+context = zmq.Context()
+# Sub Socket
+pub = context.socket(zmq.PUB)
+
+pub.connect(f"tcp://{host}:{port}")
+time.sleep(.1)
+#ZMQ
 
 @app.route("/")
 def index():
@@ -114,9 +127,16 @@ def scan_endpoint():
 	# 	'json you sent': request.get_json(force=True)
 	# 	# 'json you sent': request.json
 	# }
+
+	pkt = "True"
+	pktName = "scan"
+	pub.send_string(pktName, flags=zmq.SNDMORE)
+	pub.send_pyobj(pkt)
+
 	return 'hi', 200
 
 # a-button api endpoint
+# Joystick api endpoint???
 @app.route('/api/drive', methods=['POST'])
 def drive_endpoint():
 	# if not request.json:
@@ -124,16 +144,25 @@ def drive_endpoint():
 	#     return None, 400
 	print(request.method)
 	print(request.form)
-	print(request.form['lr'])
-	print(request.form['ud'])
+	print(request.form['lr'])  # Left Right
+	print(request.form['ud'])  # Up Down
 	# print(request.json)
 	# print(request.get_json(force=True))
 	# response = {
 	# 	'json you sent': request.get_json(force=True)
 	# 	# 'json you sent': request.json
 	# }
-	
+
+	# ZMQ PubSub
+	lr = request.form['lr']
+	ud = request.form['ud']
+	pkt = [ud, lr]
+	pktName = "motors"
+	pub.send_string(pktName, flags=zmq.SNDMORE)
+	pub.send_pyobj(pkt)
+
 	return jsonify({'lr': request.form['lr'], 'ud':request.form['ud']}), 200
+
 
 # check to see if this is the main thread of execution
 if __name__ == '__main__':

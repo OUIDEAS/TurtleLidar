@@ -32,7 +32,7 @@ motorBuffer = []
 n = 10  # length of buffer
 
 td = TurtleDriver()
-td.initServo()
+# td.initServo()
 fv = td.publish_firmware_ver()
 print("Turtle Shield Firmware Version:", fv)
 
@@ -45,9 +45,13 @@ while True:
     evts = dict(poller.poll(timeout=50))
 
     if socket in evts:
-        topic = socket.recv_string()
-        pkt = socket.recv_pyobj()
-        print(f"Topic: {topic} => {pkt}")
+        try:
+            topic = socket.recv_string()
+            pkt = socket.recv_pyobj()
+            print(f"Topic: {topic} => {pkt}")
+        except Exception:
+            topic = "Bad Input"
+
         if topic == "motors":
             if len(pkt) == 2:
                 if len(motorBuffer) > n:
@@ -68,7 +72,7 @@ while True:
                 pub.send_pyobj(scan)
                 print("sent")
 
-    if time.time()-t >= .5:
+    if time.time()-t >= .125:
         # Just to make sure script is working
 
         # Could just remove the time thing and make it send

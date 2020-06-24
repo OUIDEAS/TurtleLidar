@@ -89,7 +89,7 @@ function gamepadLoop(controller, readToggle) { // reference: https://github.com/
         //console.log('Inactive.');
     }
 
-    setTimeout(function(){gamepadLoop(controller, readToggle);}, 100);
+    setTimeout(function(){gamepadLoop(controller, readToggle);}, 50);
 }
 
 //console.log('waiting for ctrl input')

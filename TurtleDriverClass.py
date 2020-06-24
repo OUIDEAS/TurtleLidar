@@ -38,11 +38,11 @@ class TurtleDriver:
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
 
-        self.lidar = RPLidar(LidarPortName)
+        # self.lidar = RPLidar(LidarPortName)
 
     def initServo(self):
         self.servo_angle = 0
-        self.set_servo(1, self.servo_angle)
+        self.set_servo(3, self.servo_angle)
 
     def shutdownLidar(self):
         self.lidar.stop_motor()
@@ -166,9 +166,9 @@ class TurtleDriver:
 
     def zeroLidar(self, Pipe_diamiter):
         self.servo_angle = 0
-        self.set_servo(1, self.servo_angle)
+        self.set_servo(3, self.servo_angle)
 
-        self.steplidar(1, -20)
+        self.steplidar(3, -20)
 
         print("Zeroing Lidar")
 
@@ -191,7 +191,7 @@ class TurtleDriver:
                         print(Error)
                         coord = np.array([0, 0])
                         PrevError = np.append(PrevError, Error)
-                        self.steplidar(1, 2)
+                        self.steplidar(3, 2)
                         i += 1
                         # step = np.append(step, [i])
                         t1 = time.time()
@@ -199,7 +199,7 @@ class TurtleDriver:
                         minVal = np.argmin(PrevError)
                         FinalStep = minVal - i
                         print(FinalStep)
-                        self.steplidar(1, FinalStep*2)
+                        self.steplidar(3, FinalStep*2)
                         print("Lidar Zeroed")
                         break
         except RPLidarException as e:

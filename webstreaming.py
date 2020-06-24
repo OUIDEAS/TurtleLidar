@@ -128,8 +128,8 @@ def scan_endpoint():
 	# 	# 'json you sent': request.json
 	# }
 
-	pkt = "True"
 	pktName = "scan"
+	pkt = "True"
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)
 

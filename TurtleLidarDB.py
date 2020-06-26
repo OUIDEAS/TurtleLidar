@@ -15,8 +15,8 @@ class TurtleLidarDB:
 
         return self
 
-    def create_table(self):
-        create_table_sql = """CREATE TABLE IF NOT EXISTS data (
+    def create_lidar_table(self):
+        create_table_sql = """CREATE TABLE IF NOT EXISTS LidarData (
                                             id integer PRIMARY KEY,
                                             timestamp text NOT NULL,
                                             odometer text,
@@ -29,13 +29,13 @@ class TurtleLidarDB:
         except Error as e:
             print(e)
 
-    def create_data_input(self, dataInput):
+    def create_lidar_data_input(self, dataInput):
         dateTime = dataInput[0]
         odom = dataInput[1]
         radius = dataInput[2]
         angle = dataInput[3]
 
-        sql = ''' INSERT INTO data (timestamp,odometer,radius,angle)
+        sql = ''' INSERT INTO LidarData (timestamp,odometer,radius,angle)
                       VALUES(?,?,?,?) '''
 
         # cur = conn.cursor()
@@ -44,8 +44,8 @@ class TurtleLidarDB:
             self.c.execute(sql, data)
         return self.c.lastrowid
 
-    def get_data(self):
-        self.c.execute("SELECT * FROM data")
+    def get_lidar_data(self):
+        self.c.execute("SELECT * FROM LidarData")
 
         rows = self.c.fetchall()
         for row in rows:
@@ -54,7 +54,7 @@ class TurtleLidarDB:
 
     def create_csv(self, filename='data.csv'):
         # https://stackoverflow.com/questions/10522830/how-to-export-sqlite-to-csv-in-python-without-being-formatted-as-a-list
-        data = self.c.execute("SELECT * FROM data")
+        data = self.c.execute("SELECT * FROM LidarData")
 
         with open(filename, 'w') as f:
             writer = csv.writer(f)
@@ -75,4 +75,5 @@ if __name__ == "__main__":
 
     with TurtleLidarDB() as db:
         # db.create_csv()
-        db.get_data()
+        db.get_lidar_data()
+        # db.create_lidar_table()

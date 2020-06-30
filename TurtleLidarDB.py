@@ -1,6 +1,7 @@
 import sqlite3
 from sqlite3 import Error
 import csv
+import pickle
 
 
 class TurtleLidarDB:
@@ -18,10 +19,11 @@ class TurtleLidarDB:
     def create_lidar_table(self):
         create_table_sql = """CREATE TABLE IF NOT EXISTS LidarData (
                                             id integer PRIMARY KEY,
-                                            timestamp text NOT NULL,
-                                            odometer text,
-                                            radius text,
-                                            angle text
+                                            timestamp REAL NOT NULL,
+                                            odometer REAL,
+                                            lidar blob,
+                                            avgR REAL,
+                                            stdR REAL
                                         );"""
 
         try:
@@ -29,28 +31,35 @@ class TurtleLidarDB:
         except Error as e:
             print(e)
 
-    def create_lidar_data_input(self, dataInput):
-        dateTime = dataInput[0]
-        odom = dataInput[1]
-        radius = dataInput[2]
-        angle = dataInput[3]
+    def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR):
+        # lidar = tuple(zip(angle, radius))
+        Lidar = pickle.dumps(lidar)
 
-        sql = ''' INSERT INTO LidarData (timestamp,odometer,radius,angle)
-                      VALUES(?,?,?,?) '''
+        sql = ''' INSERT INTO LidarData (timestamp,odometer,lidar,avgR,stdR)
+                      VALUES(?,?,?,?,?) '''
 
         # cur = conn.cursor()
-        for item in range(len(radius)):
-            data = (dateTime, odom, radius[item], angle[item])
-            self.c.execute(sql, data)
+        # for item in range(len(radius)):
+        data = (Time, odo, Lidar, avgR, stdR)
+        self.c.execute(sql, data)
+
         return self.c.lastrowid
 
-    def get_lidar_data(self):
-        self.c.execute("SELECT * FROM LidarData")
+    def get_lidar_data(self, rowID=1):
+        self.c.execute("SELECT * FROM LidarData WHERE id=?", (rowID,))
 
         rows = self.c.fetchall()
         for row in rows:
-            print(row)
-        return rows
+
+            LidarData = {
+                "Lidar": pickle.loads(row[3]),
+                "Time": row[1],
+                "odo": row[2],
+                "AvgR": row[4],
+                "StdRadius": row[5]
+            }
+            print(LidarData)
+        return LidarData
 
     def create_csv(self, filename='data.csv'):
         # https://stackoverflow.com/questions/10522830/how-to-export-sqlite-to-csv-in-python-without-being-formatted-as-a-list
@@ -58,7 +67,7 @@ class TurtleLidarDB:
 
         with open(filename, 'w') as f:
             writer = csv.writer(f)
-            writer.writerow(['row id', 'timestamp', 'odometer', 'radius', 'angle'])
+            # writer.writerow(['row id', 'timestamp', 'odometer', 'radius', 'angle'])
             writer.writerows(data)
 
     def __exit__(self, ext_type, exc_value, traceback):
@@ -74,6 +83,5 @@ class TurtleLidarDB:
 if __name__ == "__main__":
 
     with TurtleLidarDB() as db:
-        # db.create_csv()
         db.get_lidar_data()
         # db.create_lidar_table()

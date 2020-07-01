@@ -3,6 +3,8 @@ import time
 from TurtleLidarDB import TurtleLidarDB
 from circle_fit import hyper_fit
 import numpy as np
+import serial
+import re
 
 PORT_NAME = 'COM7'
 
@@ -51,15 +53,33 @@ if __name__ == '__main__':
     Y_lidar = Y_lidar - circle[1]
     r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
 
+    data = ["no"]
+    ser = serial.Serial('COM8', 115200)
+    while data[0] != "data":
+        read_serial = ser.readline()
+        data = read_serial.decode('utf-8')
+        data = re.sub(r'[()]', '', data)
+        data = data.split(", ")
+
+        if data[0] == "data":
+            gyro = (float(data[1]), float(data[2]), float(data[3]))
+            enc = float(data[4])
+            t = float(data[5])
+
     LidarData = {
         "Lidar": tuple(zip(X[0], X[1])),
         "Time": time.time(),
-        "odo": odo,
+        "odo": enc,
         "AvgR": np.mean(r),
-        "StdRadius": np.std(r)
+        "StdRadius": np.std(r),
+        "minR": min(r),
+        "maxR": max(r)
     }
 
     with TurtleLidarDB() as db:
+        # db.create_gyro_table()
+        db.create_lidar_table()
+        # gyro_id = db.create_gyro_data_input(time.time(), gyro[0], gyro[1], gyro[2], enc)
         db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
-                                   LidarData["AvgR"], LidarData["StdRadius"])
+                                   LidarData["AvgR"], LidarData["StdRadius"], gyro)
 

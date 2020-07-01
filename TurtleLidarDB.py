@@ -23,7 +23,8 @@ class TurtleLidarDB:
                                             odometer REAL,
                                             lidar blob,
                                             avgR REAL,
-                                            stdR REAL
+                                            stdR REAL,
+                                            gyro blob
                                         );"""
 
         try:
@@ -31,16 +32,42 @@ class TurtleLidarDB:
         except Error as e:
             print(e)
 
-    def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR):
+    def create_gyro_table(self):
+        create_table_sql = """CREATE TABLE IF NOT EXISTS GyroData (
+                                            id integer PRIMARY KEY,
+                                            timestamp REAL NOT NULL,
+                                            gX REAL,
+                                            gY REAL,
+                                            gZ REAL,
+                                            odometer REAL
+                                        );"""
+
+        try:
+            self.c.execute(create_table_sql)
+        except Error as e:
+            print(e)
+
+    def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR, gyro):
         # lidar = tuple(zip(angle, radius))
         Lidar = pickle.dumps(lidar)
+        Gyro = pickle.dumps(gyro)
 
-        sql = ''' INSERT INTO LidarData (timestamp,odometer,lidar,avgR,stdR)
-                      VALUES(?,?,?,?,?) '''
+        sql = ''' INSERT INTO LidarData (timestamp,odometer,lidar,avgR,stdR, gyro)
+                      VALUES(?,?,?,?,?,?) '''
 
         # cur = conn.cursor()
         # for item in range(len(radius)):
-        data = (Time, odo, Lidar, avgR, stdR)
+        data = (Time, odo, Lidar, avgR, stdR, Gyro)
+        self.c.execute(sql, data)
+
+        return self.c.lastrowid
+
+    def create_gyro_data_input(self, Time, gX, gY, gZ, odo):
+
+        sql = ''' INSERT INTO GyroData (timestamp, gX, gY, gZ, odometer)
+                      VALUES(?,?,?,?,?) '''
+
+        data = (Time, gX, gY, gZ, odo)
         self.c.execute(sql, data)
 
         return self.c.lastrowid
@@ -56,7 +83,8 @@ class TurtleLidarDB:
                 "Time": row[1],
                 "odo": row[2],
                 "AvgR": row[4],
-                "StdRadius": row[5]
+                "StdRadius": row[5],
+                "gyro": pickle.loads(row[6])
             }
             print(LidarData)
         return LidarData
@@ -83,5 +111,5 @@ class TurtleLidarDB:
 if __name__ == "__main__":
 
     with TurtleLidarDB() as db:
-        db.get_lidar_data()
         # db.create_lidar_table()
+        db.get_lidar_data(1)

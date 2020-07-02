@@ -82,14 +82,18 @@ class TurtleDriver:
 
     def battery_status(self):
         status = self.comm.proccess_command(frame.battery())
-        status = status.decode('utf-8')
-
-        if not status or not status.endswith("\r\n"):
-            # print("Could not get battery status")
-            raise TurtleException("Could not get battery status")
-        else:
+        try:
             battery_status = struct.unpack("<f", status[:4])[0]
-            return battery_status
+        except:
+             print("it did a bad")
+             battery_status = None
+
+        # if not status or not str(status).endswith("\r\n"):
+        #     # print("Could not get battery status")
+        #     raise TurtleException("Could not get battery status")
+        # else:
+        #     battery_status = struct.unpack("<f", status[:4])[0]
+        return battery_status
 
     def publish_firmware_ver(self):
         firmware_ver = self.comm.proccess_command(frame.firmware_ver())

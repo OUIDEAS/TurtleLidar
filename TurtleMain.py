@@ -2,14 +2,10 @@ import zmq # package is pyzmq
 import time
 from TurtleDriverClass import TurtleDriver
 from TurtleLidarDB import TurtleLidarDB
-from datetime import datetime as dt
-
-
-def getTime():
-    now = dt.now()
-    date_time = now.strftime("%m/%d/%Y, %H:%M:%S")
-    return date_time
-
+import numpy as np
+import serial
+from circle_fit import least_squares_circle, hyper_fit
+import re
 
 host = "127.0.0.1"
 port = "5001"
@@ -67,16 +63,56 @@ while True:
                     motorBuffer.append([pkt[0], pkt[1]])
                 tlast = time.time()
         if topic == "scan":
-            if pkt != False:
+            if pkt[0] != False:
                 print("scan")
                 td.stopTurtle()
                 time.sleep(1)
+                ScanTime = time.time()
                 scan = td.lidarScan()
 
-                odometer = 0
-                dbInput = (getTime(), odometer, scan[0], scan[1])
+                # Find Center of circle and basic data analysis
+                rad2deg = np.pi / 180
+                th = np.asarray(scan[0]) * rad2deg
+                X_lidar = scan[1] * np.cos(th)
+                Y_lidar = scan[1] * np.sin(th)
+                coord = []
+                for i in range(len(X_lidar)):
+                    coord.append([X_lidar[i], Y_lidar[i]])
+                circle = hyper_fit(coord)
+                X_lidar = X_lidar - circle[0]
+                Y_lidar = Y_lidar - circle[1]
+                r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
+                XY = str((circle[0], circle[1]))
+
+                # Access
+                data = ["no"]
+                ser = serial.Serial('COM8', 115200)
+                while data[0] != "data":
+                    read_serial = ser.readline()
+                    data = read_serial.decode('utf-8')
+                    data = re.sub(r'[()]', '', data)
+                    data = data.split(", ")
+
+                    if data[0] == "data":
+                        gyro = (float(data[1]), float(data[2]), float(data[3]))
+                        enc = float(data[4])
+                        t = float(data[5])
+
+                LidarData = {
+                    "Lidar": tuple(zip(scan[0], scan[1])),
+                    "Time": ScanTime,
+                    "odo": enc,
+                    "AvgR": np.mean(r),
+                    "StdRadius": np.std(r),
+                    "minR": min(r),
+                    "maxR": max(r),
+                    "XYcenter": XY
+                }
+
                 with TurtleLidarDB as db:
-                    db.create_data_input(dbInput)
+                    db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
+                                               LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
+                                               LidarData["maxR"], XY, gyro, pkt[1])
 
     if time.time()-t >= .025:
         # Just to make sure script is working

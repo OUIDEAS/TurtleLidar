@@ -5,6 +5,9 @@ from circle_fit import hyper_fit
 import numpy as np
 import serial
 import re
+import cv2
+import imutils
+from imutils.video import VideoStream
 
 PORT_NAME = 'COM7'
 
@@ -12,7 +15,7 @@ PORT_NAME = 'COM7'
 def run():
     '''Main function'''
     lidar = RPLidar(PORT_NAME, 256000)
-    t=time.time()
+    t = time.time()
 
     ang = []
     dis = []
@@ -38,8 +41,6 @@ def run():
 
 if __name__ == '__main__':
     X = run()
-    # create a database connection
-    odo = "0"
 
     rad2deg = np.pi / 180
     th = np.asarray(X[0]) * rad2deg
@@ -52,7 +53,7 @@ if __name__ == '__main__':
     X_lidar = X_lidar - circle[0]
     Y_lidar = Y_lidar - circle[1]
     r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
-
+    XY = str((circle[0], circle[1]))
     data = ["no"]
     ser = serial.Serial('COM8', 115200)
     while data[0] != "data":
@@ -66,6 +67,17 @@ if __name__ == '__main__':
             enc = float(data[4])
             t = float(data[5])
 
+    vs = VideoStream(src=0).start()
+    frame = vs.read()
+    frame = imutils.resize(frame, width=600)
+
+    Save_Image = frame
+    Save_Image = cv2.imencode('.png', Save_Image)[1]
+    data_encode = np.array(Save_Image)
+    str_encode = data_encode.tostring()
+
+
+
     LidarData = {
         "Lidar": tuple(zip(X[0], X[1])),
         "Time": time.time(),
@@ -73,13 +85,12 @@ if __name__ == '__main__':
         "AvgR": np.mean(r),
         "StdRadius": np.std(r),
         "minR": min(r),
-        "maxR": max(r)
+        "maxR": max(r),
+        "XYcenter": XY
     }
 
     with TurtleLidarDB() as db:
-        # db.create_gyro_table()
         db.create_lidar_table()
-        # gyro_id = db.create_gyro_data_input(time.time(), gyro[0], gyro[1], gyro[2], enc)
         db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
-                                   LidarData["AvgR"], LidarData["StdRadius"], gyro)
+                                   LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],LidarData["maxR"], XY, gyro, str_encode)
 

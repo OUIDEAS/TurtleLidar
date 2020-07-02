@@ -24,7 +24,12 @@ class TurtleLidarDB:
                                             lidar blob,
                                             avgR REAL,
                                             stdR REAL,
-                                            gyro blob
+                                            minR REAL,
+                                            maxR REAL,
+                                            xyCenter TEXT,
+                                            gyro blob,
+                                            Image blob,
+                                            Deleted TEXT
                                         );"""
 
         try:
@@ -32,42 +37,19 @@ class TurtleLidarDB:
         except Error as e:
             print(e)
 
-    def create_gyro_table(self):
-        create_table_sql = """CREATE TABLE IF NOT EXISTS GyroData (
-                                            id integer PRIMARY KEY,
-                                            timestamp REAL NOT NULL,
-                                            gX REAL,
-                                            gY REAL,
-                                            gZ REAL,
-                                            odometer REAL
-                                        );"""
-
-        try:
-            self.c.execute(create_table_sql)
-        except Error as e:
-            print(e)
-
-    def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR, gyro):
+    def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR, minR, maxR, xy, gyro, image):
         # lidar = tuple(zip(angle, radius))
         Lidar = pickle.dumps(lidar)
         Gyro = pickle.dumps(gyro)
+        Image = pickle.dumps(image)
 
-        sql = ''' INSERT INTO LidarData (timestamp,odometer,lidar,avgR,stdR, gyro)
-                      VALUES(?,?,?,?,?,?) '''
+        sql = ''' INSERT INTO LidarData (timestamp,odometer,lidar,avgR,stdR,minR,maxR,xyCenter,gyro,Image,Deleted)
+                      VALUES(?,?,?,?,?,?,?,?,?,?,?) '''
 
         # cur = conn.cursor()
         # for item in range(len(radius)):
-        data = (Time, odo, Lidar, avgR, stdR, Gyro)
-        self.c.execute(sql, data)
-
-        return self.c.lastrowid
-
-    def create_gyro_data_input(self, Time, gX, gY, gZ, odo):
-
-        sql = ''' INSERT INTO GyroData (timestamp, gX, gY, gZ, odometer)
-                      VALUES(?,?,?,?,?) '''
-
-        data = (Time, gX, gY, gZ, odo)
+        de = "False"
+        data = (Time, odo, Lidar, avgR, stdR, minR, maxR, str(xy), Gyro, Image, de)
         self.c.execute(sql, data)
 
         return self.c.lastrowid
@@ -84,10 +66,29 @@ class TurtleLidarDB:
                 "odo": row[2],
                 "AvgR": row[4],
                 "StdRadius": row[5],
-                "gyro": pickle.loads(row[6])
+                "minR": row[6],
+                "maxR": row[7],
+                "xyCenter": row[8],
+                "gyro": pickle.loads(row[9]),
+                "image": pickle.loads(row[10])
             }
+
             print(LidarData)
         return LidarData
+
+    def delete_lidar_data(self, RowID):
+        """
+        update priority, begin_date, and end date of a task
+        :param conn:
+        :param task:
+        :return: project id
+        """
+        sql = ''' UPDATE LidarData
+                  SET Deleted = ?
+                  WHERE id = ?'''
+
+        data = ("True", RowID)
+        self.c.execute(sql, data)
 
     def create_csv(self, filename='data.csv'):
         # https://stackoverflow.com/questions/10522830/how-to-export-sqlite-to-csv-in-python-without-being-formatted-as-a-list
@@ -109,7 +110,16 @@ class TurtleLidarDB:
 
 
 if __name__ == "__main__":
+    import cv2
+    import numpy as np
 
     with TurtleLidarDB() as db:
         # db.create_lidar_table()
-        db.get_lidar_data(1)
+        # db.delete_lidar_data(3)
+        X = db.get_lidar_data(2)
+
+    strimg = np.frombuffer(X["image"], np.uint8)
+    img = cv2.imdecode(strimg, cv2.IMREAD_COLOR)
+    cv2.imshow('image', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()

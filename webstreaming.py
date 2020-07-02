@@ -9,6 +9,7 @@ from flask import Flask
 from flask import render_template
 from flask import request
 from flask import jsonify
+import numpy as np
 import threading
 import argparse
 import datetime
@@ -114,6 +115,8 @@ def video_feed():
 # a-button api endpoint
 @app.route('/api/scan', methods=['POST'])
 def scan_endpoint():
+	global outputFrame
+
 	# if not request.json:
 	#     print(request.__dict__)
 	#     return None, 400
@@ -128,8 +131,18 @@ def scan_endpoint():
 	# 	# 'json you sent': request.json
 	# }
 
+	# Grab Image to send to other script
+	if outputFrame != None:
+		Image = outputFrame
+		Image = cv2.imencode('.png', Image)
+		Image = np.array(Image)
+		Image = Image.tostring()
+	else:
+		Image = "null"
+		print("No Image...")
+
 	pktName = "scan"
-	pkt = "True"
+	pkt = ("True", Image)
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)
 

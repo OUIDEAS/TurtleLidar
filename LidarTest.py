@@ -53,7 +53,6 @@ if __name__ == '__main__':
     X_lidar = X_lidar - circle[0]
     Y_lidar = Y_lidar - circle[1]
     r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
-    XY = str((circle[0], circle[1]))
     data = ["no"]
     ser = serial.Serial('COM8', 115200)
     while data[0] != "data":
@@ -86,11 +85,15 @@ if __name__ == '__main__':
         "StdRadius": np.std(r),
         "minR": min(r),
         "maxR": max(r),
-        "XYcenter": XY
+        "xCenter": circle[0],
+        "yCenter": circle[1]
     }
+
+    batVolt = 6*3.7
 
     with TurtleLidarDB() as db:
         db.create_lidar_table()
         db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
-                                   LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],LidarData["maxR"], XY, gyro, str_encode)
+                                   LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],LidarData["maxR"],
+                                   LidarData["xCenter"], LidarData["yCenter"], gyro, str_encode, batVolt)
 

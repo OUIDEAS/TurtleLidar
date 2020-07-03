@@ -82,9 +82,8 @@ while True:
                 X_lidar = X_lidar - circle[0]
                 Y_lidar = Y_lidar - circle[1]
                 r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
-                XY = str((circle[0], circle[1]))
 
-                # Access
+                # Access data from micrcontroller
                 data = ["no"]
                 ser = serial.Serial('COM8', 115200)
                 while data[0] != "data":
@@ -106,13 +105,17 @@ while True:
                     "StdRadius": np.std(r),
                     "minR": min(r),
                     "maxR": max(r),
-                    "XYcenter": XY
+                    "Xcenter": circle[0],
+                    "Ycenter": circle[1]
                 }
+
+                batVolt = td.battery_status()
 
                 with TurtleLidarDB as db:
                     db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                                LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
-                                               LidarData["maxR"], XY, gyro, pkt[1])
+                                               LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], gyro,
+                                               pkt[1], batVolt)
 
     if time.time()-t >= .025:
         # Just to make sure script is working

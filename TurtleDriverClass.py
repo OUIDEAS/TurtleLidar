@@ -2,13 +2,9 @@ from serial_comm import SerialComm
 from utils import power_to_motor_payload, reset_STM, servo_angle_to_duty, estimateError
 import frame
 import numpy as np
-from rplidar import RPLidar, RPLidarException
+from RP_LIDAR import RPLidar, RPLidarException
 import time
 import struct
-
-
-class FinishScan(Exception):
-    """Exception class to end the lidar scan"""
 
 
 class TurtleException(Exception):
@@ -38,7 +34,7 @@ class TurtleDriver:
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
 
-        # self.lidar = RPLidar(LidarPortName)
+        self.lidar = RPLidar(LidarPortName, 256000)  # Baud rate must be 256000 for RPlidar S1
 
     def initServo(self):
         self.servo_angle = 0
@@ -84,9 +80,9 @@ class TurtleDriver:
         status = self.comm.proccess_command(frame.battery())
         try:
             battery_status = struct.unpack("<f", status[:4])[0]
-        except:
-             print("it did a bad")
-             battery_status = None
+        except Exception as e:
+            print(e)
+            battery_status = None
 
         # if not status or not str(status).endswith("\r\n"):
         #     # print("Could not get battery status")
@@ -105,6 +101,7 @@ class TurtleDriver:
             firmware_ver = firmware_ver[:-2]
             # print(firmware_ver)
             return firmware_ver
+
     def send_motor_command(self, FrontLeft, FrontRight, RearLeft, RearRight):
         # Input range = -1 - 1
 
@@ -182,10 +179,10 @@ class TurtleDriver:
         i = 0
         t1 = time.time()
         try:
-            for scan in self.lidar.iter_scans(max_buf_meas=0):
+            for scan in self.lidar.iter_measures(max_buf_meas=0):
                 for data in scan:
-                    theta = data[1] * self.DEG2RAD
-                    R = data[2] * self.MM2INCH
+                    theta = data[2] * self.DEG2RAD
+                    R = data[3] * self.MM2INCH
                     X_lidar = R * np.cos(theta)
                     Y_lidar = R * np.sin(theta)
                     coord = np.vstack((coord, [X_lidar, Y_lidar]))
@@ -218,26 +215,16 @@ class TurtleDriver:
         outfile = open(path, 'w')
         t1 = time.time()
 
-        for i in range(tries):
-            try:
-                for measurment in self.lidar.iter_measurments():
-                    line = '\t'.join(str(v) for v in measurment)
-                    outfile.write(line + '\n')
-                    if time.time() - t1 > scanLength:
-                        raise FinishScan("Scan Complete")
-
-            except RPLidarException as e:
-                print("Retrying due to error:", e)
-                continue
-            except FinishScan as e:
-                print(e)
-                break
-            except KeyboardInterrupt:
-                print("Keyboard Interrupt detected")
-                break
-            else:
-                print("Shouldn't have got here, I think")
-                break
+        try:
+            for measurment in self.lidar.iter_measures():
+                line = '\t'.join(str(v) for v in measurment)
+                outfile.write(line + '\n')
+                if time.time() - t1 > scanLength:
+                    break
+        except RPLidarException as e:
+            print("Stopping due to:", e)
+        except KeyboardInterrupt:
+            print("Keyboard Interrupt detected")
 
         outfile.close()
         self.lidar.stop()
@@ -258,26 +245,19 @@ class TurtleDriver:
         dis = []
 
         t1 = time.time()
-        for i in range(tries):
-            try:
-                for scan in self.lidar.iter_measurments():
-                    for data in scan:
-                        theta = data[2]
-                        R = data[3]
+        try:
+            print('Recording measurments... Press Crl+C to stop.')
+            for data in self.lidar.iter_measures():
+                # line = '\t'.join(str(v) for v in measurment)
+                theta = data[2]
+                R = data[3]
 
-                        ang.append(theta)
-                        dis.append(R)
-                    if time.time() - t1 > abs(scanLength):
-                        raise FinishScan("Scan Complete")
-
-            except RPLidarException as e:
-                print("Retrying due to error:", e)
-                continue
-            except FinishScan as e:
-                print(e)
-                break
-            else:
-                break
+                ang.append(theta)
+                dis.append(R)
+                if time.time() - t1 >= scanLength:
+                    break
+        except KeyboardInterrupt:
+            print('Stoping.')
         self.lidar.stop()
         time.sleep(.5)
         return ang, dis

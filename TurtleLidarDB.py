@@ -26,9 +26,11 @@ class TurtleLidarDB:
                                             stdR REAL,
                                             minR REAL,
                                             maxR REAL,
-                                            xyCenter TEXT,
+                                            xCenter REAL,
+                                            yCenter REAL,
                                             gyro blob,
                                             Image blob,
+                                            batVolt REAL,
                                             Deleted TEXT
                                         );"""
 
@@ -37,19 +39,19 @@ class TurtleLidarDB:
         except Error as e:
             print(e)
 
-    def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR, minR, maxR, xy, gyro, image):
+    def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR, minR, maxR, xCenter, yCenter, gyro, image, batVolt):
         # lidar = tuple(zip(angle, radius))
         Lidar = pickle.dumps(lidar)
         Gyro = pickle.dumps(gyro)
         Image = pickle.dumps(image)
 
-        sql = ''' INSERT INTO LidarData (timestamp,odometer,lidar,avgR,stdR,minR,maxR,xyCenter,gyro,Image,Deleted)
-                      VALUES(?,?,?,?,?,?,?,?,?,?,?) '''
+        sql = ''' INSERT INTO LidarData (timestamp,odometer,lidar,avgR,stdR,minR,maxR,xCenter,yCenter,gyro,Image, batVolt, Deleted)
+                      VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) '''
 
         # cur = conn.cursor()
         # for item in range(len(radius)):
         de = "False"
-        data = (Time, odo, Lidar, avgR, stdR, minR, maxR, str(xy), Gyro, Image, de)
+        data = (Time, odo, Lidar, avgR, stdR, minR, maxR, xCenter, yCenter, Gyro, Image, batVolt, de)
         self.c.execute(sql, data)
 
         return self.c.lastrowid
@@ -68,9 +70,10 @@ class TurtleLidarDB:
                 "StdRadius": row[5],
                 "minR": row[6],
                 "maxR": row[7],
-                "xyCenter": row[8],
-                "gyro": pickle.loads(row[9]),
-                "image": pickle.loads(row[10])
+                "xCenter": row[8],
+                "yCenter": row[9],
+                "gyro": pickle.loads(row[10]),
+                "image": pickle.loads(row[11])
             }
 
             print(LidarData)
@@ -92,7 +95,7 @@ class TurtleLidarDB:
 
     def create_csv(self, filename='data.csv'):
         # https://stackoverflow.com/questions/10522830/how-to-export-sqlite-to-csv-in-python-without-being-formatted-as-a-list
-        data = self.c.execute("SELECT * FROM LidarData")
+        data = self.c.execute('''SELECT * FROM LidarData WHERE Deleted = False''')
 
         with open(filename, 'w') as f:
             writer = csv.writer(f)

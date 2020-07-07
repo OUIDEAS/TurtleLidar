@@ -238,8 +238,8 @@ class TurtleDriver:
         #        ang: list of angles that lidar scanned at
         #        dis: list of distances that lidar scanned at
 
-        self.zeroLidar(24)  # Need to find pipe Diameter
-        time.sleep(1)
+        # self.zeroLidar(24)  # Need to find pipe Diameter
+        # time.sleep(1)
 
         ang = []
         dis = []

@@ -22,6 +22,7 @@ import zmq
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
 outputFrame = None
+SendFrame = None
 lock = threading.Lock()
 
 # initialize a flask object
@@ -58,7 +59,7 @@ def sensorData():
 def video_stream(frameCount):
 	# grab global references to the video stream, output frame, and
 	# lock variables
-	global vs, outputFrame, lock
+	global vs, outputFrame, lock, SendFrame
 
 	# # initialize the motion detector and the total number of frames
 	# # read thus far
@@ -81,6 +82,7 @@ def video_stream(frameCount):
 		# lock
 		with lock:
 			outputFrame = frame.copy()
+			SendFrame = frame
 		
 def generate():
 	# grab global references to the output frame and lock variables
@@ -115,7 +117,7 @@ def video_feed():
 # a-button api endpoint
 @app.route('/api/scan', methods=['POST'])
 def scan_endpoint():
-	global outputFrame
+	global SendFrame, lock
 
 	# if not request.json:
 	#     print(request.__dict__)
@@ -132,17 +134,18 @@ def scan_endpoint():
 	# }
 
 	# Grab Image to send to other script
-	if outputFrame != None:
-		Image = outputFrame
-		Image = cv2.imencode('.png', Image)
-		Image = np.array(Image)
-		Image = Image.tostring()
-	else:
-		Image = "null"
-		print("No Image...")
+	# if SendFrame != None:
+	with lock:  # Unsure if this is needed?
+		Image = SendFrame
+		Image = cv2.imencode('.png', Image)[1]
+		data_encode = np.array(Image)
+		str_encode = data_encode.tostring()
+	# else:
+	# 	Image = "null"
+	# 	print("No Image...")
 
 	pktName = "scan"
-	pkt = ("True", Image)
+	pkt = ("True", str_encode)
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)
 
@@ -199,5 +202,7 @@ if __name__ == '__main__':
 	app.run(host=args["ip"], port=args["port"], debug=True,
 		threaded=True, use_reloader=False)
 
+	# app.run(host="0.0.0.0", port="5555", debug=True,
+	# 		threaded=True, use_reloader=False)
 # release the video stream pointer
 vs.stop()

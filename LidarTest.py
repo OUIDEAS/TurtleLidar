@@ -8,8 +8,11 @@ import re
 import cv2
 import imutils
 from imutils.video import VideoStream
+# from TurtleDriverClass import TurtleDriver
 
 PORT_NAME = 'COM7'
+# PORT_NAME = '/dev/ttyUSB0'
+
 
 
 def run():
@@ -26,7 +29,7 @@ def run():
             # line = '\t'.join(str(v) for v in measurment)
             ang.append(measurment[2])
             dis.append(measurment[3])
-            if time.time() - t >=3:
+            if time.time() - t >= 3:
                 break
     except KeyboardInterrupt:
         print('Stoping.')
@@ -42,6 +45,7 @@ def run():
 if __name__ == '__main__':
     X = run()
 
+    # Finding center of circle
     rad2deg = np.pi / 180
     th = np.asarray(X[0]) * rad2deg
     X_lidar = X[1] * np.cos(th)
@@ -53,8 +57,11 @@ if __name__ == '__main__':
     X_lidar = X_lidar - circle[0]
     Y_lidar = Y_lidar - circle[1]
     r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
+
+    # Gathering data from micro controller
     data = ["no"]
     ser = serial.Serial('COM8', 115200)
+    # ser = serial.Serial('/dev/ttyACM0', 115200)
     while data[0] != "data":
         read_serial = ser.readline()
         data = read_serial.decode('utf-8')
@@ -66,6 +73,9 @@ if __name__ == '__main__':
             enc = float(data[4])
             t = float(data[5])
 
+
+
+    # Getting image from camera
     vs = VideoStream(src=0).start()
     frame = vs.read()
     frame = imutils.resize(frame, width=600)
@@ -91,9 +101,22 @@ if __name__ == '__main__':
 
     batVolt = 6*3.7
 
+    # td = TurtleDriver()
+    # batVolt = td.battery_status()
+
     with TurtleLidarDB() as db:
         db.create_lidar_table()
         db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
-                                   LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],LidarData["maxR"],
+                                   LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"], LidarData["maxR"],
                                    LidarData["xCenter"], LidarData["yCenter"], gyro, str_encode, batVolt)
 
+    print("Time: ", LidarData["Time"])
+    print("Odometer: ", LidarData["odo"])
+    print("AvgR: ",LidarData["AvgR"])
+    print("stdR: ",LidarData["StdRadius"])
+    print("minR: ",LidarData["minR"])
+    print("maxR: ",LidarData["maxR"])
+    print("xCenter: ",LidarData["xCenter"])
+    print("yCenter: ",LidarData["yCenter"])
+    print("gyro: ", gyro)
+    print("Battery: ", batVolt)

@@ -3,9 +3,8 @@ import time
 from TurtleDriverClass import TurtleDriver
 from TurtleLidarDB import TurtleLidarDB
 import numpy as np
-import serial
-from circle_fit import least_squares_circle, hyper_fit
-import re
+from miscFunctions import find_center, ReadSerialTurtle
+
 
 host = "127.0.0.1"
 port = "5001"
@@ -35,8 +34,10 @@ td = TurtleDriver()
 fv = td.publish_firmware_ver()
 print("Turtle Shield Firmware Version:", fv)
 
-with TurtleLidarDB as db:
-    db.create_table()
+ser = ReadSerialTurtle()
+
+with TurtleLidarDB() as db:
+    db.create_lidar_table()
 
 for i in range(n):
     # Makes fake buffer
@@ -70,32 +71,17 @@ while True:
                 ScanTime = time.time()
                 scan = td.lidarScan()
 
-                # Find Center of circle and basic data analysis
-                rad2deg = np.pi / 180
-                th = np.asarray(scan[0]) * rad2deg
-                X_lidar = scan[1] * np.cos(th)
-                Y_lidar = scan[1] * np.sin(th)
-                coord = []
-                for i in range(len(X_lidar)):
-                    coord.append([X_lidar[i], Y_lidar[i]])
-                circle = hyper_fit(coord)
-                X_lidar = X_lidar - circle[0]
-                Y_lidar = Y_lidar - circle[1]
-                r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
+                # Adjust data for circle center
+                pipe_scan = find_center(scan)
+                r = pipe_scan[1]
+                circle = []
+                circle[0] = pipe_scan[1]
+                circle[1] = pipe_scan[2]
 
                 # Access data from micrcontroller
-                data = ["no"]
-                ser = serial.Serial('COM8', 115200)
-                while data[0] != "data":
-                    read_serial = ser.readline()
-                    data = read_serial.decode('utf-8')
-                    data = re.sub(r'[()]', '', data)
-                    data = data.split(", ")
-
-                    if data[0] == "data":
-                        gyro = (float(data[1]), float(data[2]), float(data[3]))
-                        enc = float(data[4])
-                        t = float(data[5])
+                data = ser.read_data()
+                gyro = data[0]
+                enc = data[1]
 
                 LidarData = {
                     "Lidar": tuple(zip(scan[0], scan[1])),
@@ -111,7 +97,7 @@ while True:
 
                 batVolt = td.battery_status()
 
-                with TurtleLidarDB as db:
+                with TurtleLidarDB() as db:
                     db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                                LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
                                                LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], gyro,

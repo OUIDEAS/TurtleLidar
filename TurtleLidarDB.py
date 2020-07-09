@@ -61,6 +61,13 @@ class TurtleLidarDB:
 
         return self.c.lastrowid
 
+    def get_table_data(self):
+        self.c.execute('''SELECT id,timestamp,odometer, avgR, stdR, minR, maxR, xCenter, yCenter, batVolt FROM LidarData''')
+        rows = self.c.fetchall()
+        # for row in rows:
+        #     print(row)
+        return rows
+
     def get_lidar_data(self, rowID=1):
         self.c.execute("SELECT * FROM LidarData WHERE id=?", (rowID,))
 
@@ -126,13 +133,14 @@ if __name__ == "__main__":
     import numpy as np
 
     with TurtleLidarDB() as db:
+        db.get_table_data()
         # db.create_lidar_table()
         # db.delete_lidar_data(2)
-        X = db.get_lidar_data(9)
-
-    strimg = np.frombuffer(X["image"], np.uint8)
-    img = cv2.imdecode(strimg, cv2.IMREAD_COLOR)
-    cv2.imshow('image', img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    # cv2.imwrite('Pic.png', img)
+    #     X = db.get_lidar_data(1)
+    #
+    # strimg = np.frombuffer(X["image"], np.uint8)
+    # img = cv2.imdecode(strimg, cv2.IMREAD_COLOR)
+    # cv2.imshow('image', img)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    # # cv2.imwrite('Pic.png', img)

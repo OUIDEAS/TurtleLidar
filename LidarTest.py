@@ -60,32 +60,30 @@ if __name__ == '__main__':
 
     # Gathering data from micro controller
     data = ["no"]
-    ser = serial.Serial('COM8', 115200)
+    ser = serial.Serial('COM10', 115200)
     # ser = serial.Serial('/dev/ttyACM0', 115200)
     while data[0] != "data":
         read_serial = ser.readline()
         data = read_serial.decode('utf-8')
         data = re.sub(r'[()]', '', data)
         data = data.split(", ")
-
         if data[0] == "data":
-            gyro = (float(data[1]), float(data[2]), float(data[3]))
-            enc = float(data[4])
-            t = float(data[5])
-
-
+            euler = (float(data[1]), float(data[2]), float(data[3]))
+            gyro = (float(data[4]), float(data[5]), float(data[6]))
+            acc = (float(data[7]), float(data[8]), float(data[9]))
+            mag = (float(data[10]), float(data[11]), float(data[12]))
+            enc = float(data[13])
+            t = float(data[14])
+            gdata = (euler, gyro, acc, mag)
 
     # Getting image from camera
     vs = VideoStream(src=0).start()
     frame = vs.read()
     frame = imutils.resize(frame, width=600)
-
     Save_Image = frame
     Save_Image = cv2.imencode('.png', Save_Image)[1]
     data_encode = np.array(Save_Image)
     str_encode = data_encode.tostring()
-
-
 
     LidarData = {
         "Lidar": tuple(zip(X[0], X[1])),
@@ -108,7 +106,7 @@ if __name__ == '__main__':
         db.create_lidar_table()
         db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                    LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"], LidarData["maxR"],
-                                   LidarData["xCenter"], LidarData["yCenter"], gyro, str_encode, batVolt)
+                                   LidarData["xCenter"], LidarData["yCenter"], gdata, str_encode, batVolt)
 
     print("Time: ", LidarData["Time"])
     print("Odometer: ", LidarData["odo"])

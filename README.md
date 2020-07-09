@@ -16,9 +16,9 @@ id | timestamp | odometer| lidar | AvgR | stdR | minR | maxR | Xcenter | Ycenter
 unique number for row| time of scan | distance traveled| Lidar Data| Average Radius (adjusted to center of circle)| Standard Deviation of Radius (adjusted to center of circle) | Minimum Radius (adjusted to center of circle) | Maximum Radius (adjusted to center of circle) | X offset for circle center | Y offset for circle center | IMU Data | Image at time of scan | Battery Voltage | Boolean if row should be shown
 n | Unix Time | meters | Binary | mm | mm | mm | mm | mm | mm | Binary | Binary | Volts | True/False
 
-* Binary Data is compressed using pickle before inserting into database
-* Lidar Data is formatted: ((angle, distance), ..., ...)
-* Gyro Data contains all of the IMU data, including gyroscope, accelerometer, magnetometer, and roll, pitch and yaw angles
+* Binary Data is serialized using pickle before inserting into database
+* Lidar Data is compressed with bz2 and formatted: ((angle, distance), ..., ...)
+* Gyro Data is formatted as a tuple: (euler, gyro, acc, mag)
 * The image is formatted as a .png
 
 ##### Code Diagram:

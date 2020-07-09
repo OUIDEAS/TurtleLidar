@@ -19,6 +19,7 @@ time.sleep(1)
 
 socket.subscribe("motors")
 socket.subscribe("scan")
+socket.subscribe("shutdown")
 
 poller = zmq.Poller()
 poller.register(socket, zmq.POLLIN)
@@ -73,26 +74,20 @@ while True:
 
                 # Adjust data for circle center
                 pipe_scan = find_center(scan)
-                r = pipe_scan[1]
-                circle = []
-                circle[0] = pipe_scan[1]
-                circle[1] = pipe_scan[2]
 
                 # Access data from micrcontroller
                 data = ser.read_data()
-                gyro = data[0]
-                enc = data[1]
 
                 LidarData = {
                     "Lidar": tuple(zip(scan[0], scan[1])),
                     "Time": ScanTime,
-                    "odo": enc,
-                    "AvgR": np.mean(r),
-                    "StdRadius": np.std(r),
-                    "minR": min(r),
-                    "maxR": max(r),
-                    "Xcenter": circle[0],
-                    "Ycenter": circle[1]
+                    "odo": data[1],
+                    "AvgR": np.mean(pipe_scan[0]),
+                    "StdRadius": np.std(pipe_scan[0]),
+                    "minR": min(pipe_scan[0]),
+                    "maxR": max(pipe_scan[0]),
+                    "Xcenter": pipe_scan[1],
+                    "Ycenter": pipe_scan[2]
                 }
 
                 batVolt = td.battery_status()
@@ -100,14 +95,15 @@ while True:
                 with TurtleLidarDB() as db:
                     db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                                LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
-                                               LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], gyro,
+                                               LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], data[0],
                                                pkt[1], batVolt)
+        if topic == "shutdown":
+            td.stopTurtle()
+            td.shutdownLidar()
+            ser.stopRead()
+            quit()
 
     if time.time()-t >= .025:
-        # Just to make sure script is working
-
-        # Could just remove the time thing and make it send
-        # commands as fast as possible, or pick a specific period
         print("Time Elapsed:", time.time()-t)
         t = time.time()
 

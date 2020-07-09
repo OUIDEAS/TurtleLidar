@@ -4,11 +4,7 @@
 # import the necessary packages
 # from pyimagesearch.motion_detection import SingleMotionDetector
 from imutils.video import VideoStream
-from flask import Response
-from flask import Flask
-from flask import render_template
-from flask import request
-from flask import jsonify
+from flask import Response, Flask, render_template, request, jsonify, send_file
 import numpy as np
 import threading
 import argparse
@@ -17,6 +13,7 @@ import imutils
 import time
 import cv2
 import zmq
+from TurtleLidarDB import TurtleLidarDB
 
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
@@ -53,8 +50,17 @@ def index():
 
 @app.route("/sensor-data")
 def sensorData():
+	displayEntries = []
+	with TurtleLidarDB() as db:
+		displayEntries = db.get_table_data()
+
 	# return the rendered template
-	return render_template("table.html")
+	return render_template("table.html", displayEntries=displayEntries)
+
+@app.route('/database')
+def downloadFile ():
+    path = "/home/jenglish/Downloads/TurtleLidarData.db" # change for database file path in implementation
+    return send_file(path, as_attachment=True)
 
 def video_stream(frameCount):
 	# grab global references to the video stream, output frame, and

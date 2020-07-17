@@ -6,9 +6,7 @@ import bz2
 
 
 class TurtleLidarDB:
-    def __enter__(self, db_file=r"C:\sqlite\db\TurtleLidarData.db"):
-    # def __enter__(self, db_file="LidarData.db"):
-    # def __enter__(self, db_file=r"C:\sqlite\db\LidarData.db"):
+    def __enter__(self, db_file="LidarData.db"):
         self.conn = None
         try:
             self.conn = sqlite3.connect(db_file)
@@ -133,7 +131,8 @@ if __name__ == "__main__":
     import numpy as np
 
     with TurtleLidarDB() as db:
-        db.get_table_data()
+        data = db.get_table_data()
+        print(data)
         # db.create_lidar_table()
         # db.delete_lidar_data(2)
     #     X = db.get_lidar_data(1)

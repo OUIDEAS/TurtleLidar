@@ -11,10 +11,8 @@ port = "5001"
 
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
-pub = context.socket(zmq.PUB)
 
 socket.bind(f"tcp://{host}:{port}")
-pub.connect("tcp://{}:{}".format("127.0.0.1", "5002"))
 time.sleep(1)
 
 socket.subscribe("motors")
@@ -101,6 +99,7 @@ while True:
             td.stopTurtle()
             td.shutdownLidar()
             ser.stopRead()
+            time.sleep(1)
             quit()
 
     if time.time()-t >= .025:

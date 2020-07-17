@@ -59,8 +59,9 @@ def sensorData():
 
 @app.route('/database')
 def downloadFile ():
-    path = "/home/jenglish/Downloads/TurtleLidarData.db" # change for database file path in implementation
-    return send_file(path, as_attachment=True)
+	# path = "C:\sqlite\db\LidarData.db" # change for database file path in implementation
+	path = "/home/pi/Desktop/Corrugated-Pipe-Scanning/LidarData.db"  # change for database file path in implementation
+	return send_file(path, as_attachment=True)
 
 def video_stream(frameCount):
 	# grab global references to the video stream, output frame, and
@@ -142,10 +143,13 @@ def scan_endpoint():
 	# Grab Image to send to other script
 	# if SendFrame != None:
 	with lock:  # Unsure if this is needed?
-		Image = SendFrame
-		Image = cv2.imencode('.png', Image)[1]
-		data_encode = np.array(Image)
-		str_encode = data_encode.tostring()
+		if SendFrame != None:
+			Image = SendFrame
+			Image = cv2.imencode('.png', Image)[1]
+			data_encode = np.array(Image)
+			str_encode = data_encode.tostring()
+		else:
+			str_encode = None
 	# else:
 	# 	Image = "null"
 	# 	print("No Image...")
@@ -190,10 +194,10 @@ def drive_endpoint():
 if __name__ == '__main__':
 	# construct the argument parser and parse command line arguments
 	ap = argparse.ArgumentParser()
-	ap.add_argument("-i", "--ip", type=str, required=True,
-		help="ip address of the device")
-	ap.add_argument("-o", "--port", type=int, required=True,
-		help="ephemeral port number of the server (1024 to 65535)")
+	# ap.add_argument("-i", "--ip", type=str, required=True,
+	# 	help="ip address of the device")
+	# ap.add_argument("-o", "--port", type=int, required=True,
+	# 	help="ephemeral port number of the server (1024 to 65535)")
 	ap.add_argument("-f", "--frame-count", type=int, default=32,
 		help="# of frames used to construct the background model")
 	args = vars(ap.parse_args())
@@ -205,10 +209,10 @@ if __name__ == '__main__':
 	t.start()
 
 	# start the flask app
-	app.run(host=args["ip"], port=args["port"], debug=True,
-		threaded=True, use_reloader=False)
+	# app.run(host=args["ip"], port=args["port"], debug=True,
+	# 	threaded=True, use_reloader=False)
 
-	# app.run(host="0.0.0.0", port="5555", debug=True,
-	# 		threaded=True, use_reloader=False)
+	app.run(host="0.0.0.0", port="5555", debug=True,
+			threaded=True, use_reloader=False)
 # release the video stream pointer
 vs.stop()

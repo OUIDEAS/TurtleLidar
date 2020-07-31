@@ -3,6 +3,7 @@ from sqlite3 import Error
 import csv
 import pickle
 import bz2
+import os
 
 
 class TurtleLidarDB:
@@ -90,7 +91,7 @@ class TurtleLidarDB:
                 "image": pickle.loads(row[11])
             }
 
-            print(LidarData)
+            # print(LidarData)
         return LidarData
 
     def delete_lidar_data(self, RowID):
@@ -109,12 +110,24 @@ class TurtleLidarDB:
 
     def create_csv(self, filename='data.csv'):
         # https://stackoverflow.com/questions/10522830/how-to-export-sqlite-to-csv-in-python-without-being-formatted-as-a-list
-        data = self.c.execute('''SELECT * FROM LidarData WHERE Deleted = False''')
+        try:
+            os.mkdir('LidarData')
+        except FileExistsError:
+            print('directory Exists')
 
-        with open(filename, 'w') as f:
-            writer = csv.writer(f)
-            # writer.writerow(['row id', 'timestamp', 'odometer', 'radius', 'angle'])
-            writer.writerows(data)
+        self.c.execute('''SELECT id FROM LidarData''')
+        rows = self.c.fetchall()
+        k = max(rows)
+
+        for i in range(k[0]):
+            data = self.get_lidar_data(i+1)
+            filename = "LidarData\scan" + str(data['Time']) + ".csv"
+            with open(filename, 'w') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Angle', 'Range', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer', 'Inclinometer'])
+                FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data["AvgR"], data['StdRadius'], data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"], data["gyro"]]
+                writer.writerow(FirstRow)
+                writer.writerows(data["Lidar"][1:])
 
     def __exit__(self, ext_type, exc_value, traceback):
         # Closes database connections, need to read through what the functions are explicitly doing
@@ -131,15 +144,12 @@ if __name__ == "__main__":
     import numpy as np
 
     with TurtleLidarDB() as db:
-        data = db.get_table_data()
-        print(data)
-        # db.create_lidar_table()
-        # db.delete_lidar_data(2)
-    #     X = db.get_lidar_data(1)
-    #
-    # strimg = np.frombuffer(X["image"], np.uint8)
-    # img = cv2.imdecode(strimg, cv2.IMREAD_COLOR)
-    # cv2.imshow('image', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # # cv2.imwrite('Pic.png', img)
+        # db.create_csv()
+        X = db.get_lidar_data(22)
+
+    strimg = np.frombuffer(X["image"], np.uint8)
+    img = cv2.imdecode(strimg, cv2.IMREAD_COLOR)
+    cv2.imshow('image', img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    # cv2.imwrite('Pic.png', img)

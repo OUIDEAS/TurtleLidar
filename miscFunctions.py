@@ -4,6 +4,7 @@ import time
 import serial
 import re
 
+from ellipse import LsqEllipse
 
 def find_center(scan):
     # Find Center of circle and new radius
@@ -11,14 +12,18 @@ def find_center(scan):
     th = np.asarray(scan[0]) * rad2deg
     X_lidar = scan[1] * np.cos(th)
     Y_lidar = scan[1] * np.sin(th)
-    coord = []
-    for i in range(len(X_lidar)):
-        coord.append([X_lidar[i], Y_lidar[i]])
-    circle = hyper_fit(coord)
-    X_lidar = X_lidar - circle[0]
-    Y_lidar = Y_lidar - circle[1]
+    # coord = []
+    # for i in range(len(X_lidar)):
+    #     coord.append([X_lidar[i], Y_lidar[i]])
+
+    coord = np.array(list(zip(X_lidar, Y_lidar)))
+    # circle = hyper_fit(coord)
+    reg = LsqEllipse().fit(coord)
+    center, width, height, phi = reg.as_parameters()
+    X_lidar = X_lidar - center[0]
+    Y_lidar = Y_lidar - center[1]
     r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
-    return r, circle[0], circle[1]
+    return r, center, width, height
 
 
 def encoder_to_odo(enc):
@@ -73,4 +78,9 @@ class ReadSerialTurtle:
 
 
 if __name__ == '__main__':
-    ser = ReadSerialTurtle('COM10')
+    # ser = ReadSerialTurtle('COM10')
+    scan = []
+    scan.append([0, 90, 180, 270, 300])
+    scan.append([1, 1, 1, 1, 1])
+    A = find_center(scan)
+    print(A)

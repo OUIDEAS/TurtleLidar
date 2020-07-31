@@ -180,24 +180,23 @@ class TurtleDriver:
         t1 = time.time()
         try:
             for scan in self.lidar.iter_measures(max_buf_meas=0):
-                for data in scan:
-                    theta = data[2] * self.DEG2RAD
-                    R = data[3] * self.MM2INCH
-                    X_lidar = R * np.cos(theta)
-                    Y_lidar = R * np.sin(theta)
-                    coord = np.vstack((coord, [X_lidar, Y_lidar]))
+                theta = scan[2] * self.DEG2RAD
+                R = scan[3] * self.MM2INCH
+                X_lidar = R * np.cos(theta)
+                Y_lidar = R * np.sin(theta)
+                coord = np.vstack((coord, [X_lidar, Y_lidar]))
+
                 if time.time() - t1 > 5:
                     if i < 10:
-                        Error = estimateError(coord, Pipe_diamiter/2)
+                        Error = estimateError(coord)
                         print(Error)
                         coord = np.array([0, 0])
                         PrevError = np.append(PrevError, Error)
                         self.steplidar(3, 2)
                         i += 1
-                        # step = np.append(step, [i])
                         t1 = time.time()
                     else:
-                        minVal = np.argmin(PrevError)
+                        minVal = np.argmin(abs(PrevError - 1))
                         FinalStep = minVal - i
                         print(FinalStep)
                         self.steplidar(3, FinalStep*2)
@@ -244,17 +243,17 @@ class TurtleDriver:
         ang = []
         dis = []
 
+        warmup = 5
         t1 = time.time()
         try:
             print('Recording measurments... Press Crl+C to stop.')
             for data in self.lidar.iter_measures():
                 # line = '\t'.join(str(v) for v in measurment)
-                theta = data[2]
-                R = data[3]
-
-                ang.append(theta)
-                dis.append(R)
-                if time.time() - t1 >= scanLength:
+                if time.time() - t1 >= warmup:
+                    if data[3] != 0:
+                        ang.append(data[2])
+                        dis.append(data[3])
+                if time.time() - t1 >= scanLength+warmup:
                     break
         except KeyboardInterrupt:
             print('Stoping.')

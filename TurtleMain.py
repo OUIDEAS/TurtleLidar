@@ -84,8 +84,9 @@ while True:
                     "StdRadius": np.std(pipe_scan[0]),
                     "minR": min(pipe_scan[0]),
                     "maxR": max(pipe_scan[0]),
-                    "Xcenter": pipe_scan[1],
-                    "Ycenter": pipe_scan[2]
+                    "Xcenter": pipe_scan[1][0],
+                    "Ycenter": pipe_scan[1][1],
+                    "H/W": pipe_scan[3]/pipe_scan[2]
                 }
 
                 batVolt = td.battery_status()

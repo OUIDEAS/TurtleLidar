@@ -1,5 +1,7 @@
 import sqlite3
 from sqlite3 import Error
+from shutil import make_archive
+from datetime import datetime
 import csv
 import pickle
 import bz2
@@ -108,12 +110,10 @@ class TurtleLidarDB:
         data = ("True", RowID)
         self.c.execute(sql, data)
 
-    def create_csv(self, filename='data.csv'):
+    def create_csv(self):
         # https://stackoverflow.com/questions/10522830/how-to-export-sqlite-to-csv-in-python-without-being-formatted-as-a-list
-        try:
+        if not os.path.isdir('LidarData'):
             os.mkdir('LidarData')
-        except FileExistsError:
-            print('directory Exists')
 
         self.c.execute('''SELECT id FROM LidarData''')
         rows = self.c.fetchall()
@@ -121,13 +121,23 @@ class TurtleLidarDB:
 
         for i in range(k[0]):
             data = self.get_lidar_data(i+1)
-            filename = "LidarData\scan" + str(data['Time']) + ".csv"
-            with open(filename, 'w') as f:
+            dt = datetime.fromtimestamp(data['Time'])
+            date_time = dt.strftime("%m-%d-%Y_%H.%M.%S")
+            filename = "LidarData\scan_" + date_time + ".csv"
+            with open(filename, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(['Angle', 'Range', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer', 'Inclinometer'])
-                FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data["AvgR"], data['StdRadius'], data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"], data["gyro"]]
+                writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',
+                                 'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY', 'magZ'])
+                FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data['Time'], data["AvgR"], data['StdRadius'],
+                            data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"],
+                            data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
+                            data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
+                            data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
+                            data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2]]
                 writer.writerow(FirstRow)
                 writer.writerows(data["Lidar"][1:])
+
+        make_archive('Data', 'zip', 'LidarData')
 
     def __exit__(self, ext_type, exc_value, traceback):
         # Closes database connections, need to read through what the functions are explicitly doing
@@ -144,12 +154,12 @@ if __name__ == "__main__":
     import numpy as np
 
     with TurtleLidarDB() as db:
-        # db.create_csv()
-        X = db.get_lidar_data(22)
+        db.create_csv()
+        # X = db.get_lidar_data(22)
 
-    strimg = np.frombuffer(X["image"], np.uint8)
-    img = cv2.imdecode(strimg, cv2.IMREAD_COLOR)
-    cv2.imshow('image', img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    # strimg = np.frombuffer(X["image"], np.uint8)
+    # img = cv2.imdecode(strimg, cv2.IMREAD_COLOR)
+    # cv2.imshow('image', img)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
     # cv2.imwrite('Pic.png', img)

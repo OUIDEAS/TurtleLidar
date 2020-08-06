@@ -1,5 +1,4 @@
 import numpy as np
-from circle_fit import least_squares_circle, hyper_fit
 import time
 import serial
 import re

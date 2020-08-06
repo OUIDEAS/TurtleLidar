@@ -59,8 +59,9 @@ def sensorData():
 
 @app.route('/database')
 def downloadFile ():
-	# path = "C:\sqlite\db\LidarData.db" # change for database file path in implementation
-	path = "/home/pi/Desktop/Corrugated-Pipe-Scanning/LidarData.db"  # change for database file path in implementation
+	with TurtleLidarDB() as db:
+		db.create_csv()
+	path = 'Data.zip'
 	return send_file(path, as_attachment=True)
 
 def video_stream(frameCount):

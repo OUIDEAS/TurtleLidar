@@ -165,10 +165,10 @@ class TurtleDriver:
 
         self.set_servo(motor, self.servo_angle)
 
-    def zeroLidar(self, Pipe_diamiter):
+    def zeroLidar(self):
         self.servo_angle = 0
         self.set_servo(3, self.servo_angle)
-
+        time.sleep(1)
         self.steplidar(3, -20)
 
         print("Zeroing Lidar")
@@ -180,14 +180,19 @@ class TurtleDriver:
         t1 = time.time()
         try:
             for scan in self.lidar.iter_measures(max_buf_meas=0):
-                theta = scan[2] * self.DEG2RAD
-                R = scan[3] * self.MM2INCH
-                X_lidar = R * np.cos(theta)
-                Y_lidar = R * np.sin(theta)
-                coord = np.vstack((coord, [X_lidar, Y_lidar]))
+                if scan[3] != 0:
+                    theta = scan[2] * self.DEG2RAD
+                    R = scan[3] * self.MM2INCH
+                    X_lidar = R * np.cos(theta)
+                    Y_lidar = R * np.sin(theta)
+                    coord = np.vstack((coord, [X_lidar, Y_lidar]))
 
                 if time.time() - t1 > 5:
-                    if i < 10:
+                    if i == 0:
+                        coord = np.array([0, 0])
+                        i += 1
+                        t1 = time.time()
+                    elif i < 11:
                         Error = estimateError(coord)
                         print(Error)
                         coord = np.array([0, 0])
@@ -196,8 +201,8 @@ class TurtleDriver:
                         i += 1
                         t1 = time.time()
                     else:
-                        minVal = np.argmin(abs(PrevError - 1))
-                        FinalStep = minVal - i
+                        minVal = np.argmin(abs(PrevError))
+                        FinalStep = minVal - i + 1
                         print(FinalStep)
                         self.steplidar(3, FinalStep*2)
                         print("Lidar Zeroed")
@@ -266,8 +271,9 @@ if __name__ == "__main__":
 
     print("Turtle Rover Motor Test")
     td = TurtleDriver()
-    time.sleep(3)
     print(td.battery_status())
-    time.sleep(2)
-    td.spinTurtle()
+    time.sleep(5)
+    td.zeroLidar()
+    time.sleep(1)
+    td.shutdownLidar()
     print("done")

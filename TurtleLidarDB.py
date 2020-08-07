@@ -123,7 +123,7 @@ class TurtleLidarDB:
             data = self.get_lidar_data(i+1)
             dt = datetime.fromtimestamp(data['Time'])
             date_time = dt.strftime("%m-%d-%Y_%H.%M.%S")
-            filename = "LidarData\scan_" + date_time + ".csv"
+            filename = os.path.join("LidarData", date_time + '.csv')
             with open(filename, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',

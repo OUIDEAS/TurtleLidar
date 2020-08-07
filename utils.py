@@ -3,7 +3,7 @@ import RPi.GPIO as GPIO
 from time import sleep
 from circle_fit import least_squares_circle
 import numpy as np
-from ellipse import LsqEllipse
+# from ellipse import LsqEllipse
 
 
 def clamp(value, mn, mx):
@@ -40,17 +40,18 @@ def reset_STM():
 
 
 def estimateError(coord):
-    # circle = least_squares_circle(coord)
-    # x = coord[:, 0]
-    # y = coord[:, 0]
-    # x = x - circle[0]
-    # y = y - circle[1]
-    # r = np.sqrt(np.square(x)+np.square(y))
-    # # remove outliers at some point
-    # error = R_expected - r
-    # meanError = np.mean(error)
+    R_expected = 12
+    circle = least_squares_circle(coord)
+    x = coord[:, 0]
+    y = coord[:, 0]
+    x = x - circle[0]
+    y = y - circle[1]
+    r = np.sqrt(np.square(x)+np.square(y))
+    # remove outliers at some point
+    error = R_expected - r
+    meanError = np.mean(error)
 
-    reg = LsqEllipse().fit(coord)
-    center, width, height, phi = reg.as_parameters()
-    hw = height/width
-    return hw
+    # reg = LsqEllipse().fit(coord)
+    # center, width, height, phi = reg.as_parameters()
+    # hw = height/width
+    return meanError

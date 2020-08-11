@@ -1,12 +1,12 @@
 import sqlite3
 from sqlite3 import Error
-from shutil import make_archive
+import time
 from datetime import datetime
 import csv
 import pickle
 import bz2
-import os
-
+import io
+import zipfile
 
 class TurtleLidarDB:
     def __enter__(self, db_file="LidarData.db"):
@@ -111,33 +111,43 @@ class TurtleLidarDB:
         self.c.execute(sql, data)
 
     def create_csv(self):
-        # https://stackoverflow.com/questions/10522830/how-to-export-sqlite-to-csv-in-python-without-being-formatted-as-a-list
-        if not os.path.isdir('LidarData'):
-            os.mkdir('LidarData')
-
         self.c.execute('''SELECT id FROM LidarData''')
         rows = self.c.fetchall()
         k = max(rows)
 
+        LidarData = {}
         for i in range(k[0]):
             data = self.get_lidar_data(i+1)
             dt = datetime.fromtimestamp(data['Time'])
             date_time = dt.strftime("%m-%d-%Y_%H.%M.%S")
-            filename = os.path.join("LidarData", date_time + '.csv')
-            with open(filename, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',
-                                 'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY', 'magZ'])
-                FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data['Time'], data["AvgR"], data['StdRadius'],
-                            data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"],
-                            data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
-                            data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
-                            data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
-                            data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2]]
-                writer.writerow(FirstRow)
-                writer.writerows(data["Lidar"][1:])
+            LidarData[date_time] = io.StringIO()
 
-        make_archive('Data', 'zip', 'LidarData')
+            writer = csv.writer(LidarData[date_time], dialect='excel', delimiter=',')
+            writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',
+                             'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY', 'magZ'])
+            FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data['Time'], data["AvgR"], data['StdRadius'],
+                        data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"],
+                        data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
+                        data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
+                        data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
+                        data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2]]
+            writer.writerow(FirstRow)
+            writer.writerows(data["Lidar"][1:])
+
+        zip_file = io.BytesIO()
+        with zipfile.ZipFile(zip_file, 'w') as zf:
+            for file in LidarData:
+                filename = file + '.csv'
+                zipdata = zipfile.ZipInfo(filename)
+                zipdata.compress_type = zipfile.ZIP_BZIP2
+                zipdata.date_time = time.localtime(time.time())[:6]
+                zf.writestr(zipdata, LidarData[file].getvalue())
+        zip_file.seek(0)
+        return zip_file
+
+    def drop_data(self):
+        self.c.execute('''DROP TABLE IF EXISTS LidarData''')
+        print('Data Deleted')
 
     def __exit__(self, ext_type, exc_value, traceback):
         # Closes database connections, need to read through what the functions are explicitly doing
@@ -150,16 +160,6 @@ class TurtleLidarDB:
 
 
 if __name__ == "__main__":
-    import cv2
-    import numpy as np
 
     with TurtleLidarDB() as db:
         db.create_csv()
-        # X = db.get_lidar_data(22)
-
-    # strimg = np.frombuffer(X["image"], np.uint8)
-    # img = cv2.imdecode(strimg, cv2.IMREAD_COLOR)
-    # cv2.imshow('image', img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # cv2.imwrite('Pic.png', img)

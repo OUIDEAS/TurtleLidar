@@ -60,9 +60,8 @@ def sensorData():
 @app.route('/database')
 def downloadFile ():
 	with TurtleLidarDB() as db:
-		db.create_csv()
-	path = 'Data.zip'
-	return send_file(path, as_attachment=True)
+		memory_file = db.create_csv()
+	return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
 
 def video_stream(frameCount):
 	# grab global references to the video stream, output frame, and

@@ -101,7 +101,7 @@ while True:
             td.shutdownLidar()
             ser.stopRead()
             time.sleep(1)
-            quit()
+            raise SystemExit
 
     if time.time()-t >= .025:
         print("Time Elapsed:", time.time()-t)

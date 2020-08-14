@@ -60,9 +60,9 @@ class ReadSerialTurtle:
                     IMU = (euler, gyro, acc, mag)
                     break
                 elif time.time()-t1 >= .5:
-                    IMU = None
-                    enc = None
-                    t = None
+                    IMU = ((0,0,0), (0,0,0), (0,0,0),(0,0,0))
+                    enc = 0
+                    t = 0
                     break
         else:
             IMU = None

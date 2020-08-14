@@ -252,7 +252,7 @@ class TurtleDriver:
         t1 = time.time()
         try:
             print('Recording measurments... Press Crl+C to stop.')
-            for data in self.lidar.iter_measures():
+            for data in self.lidar.iter_measures(scan_type='normal', max_buf_meas=False):
                 # line = '\t'.join(str(v) for v in measurment)
                 if time.time() - t1 >= warmup:
                     if data[3] != 0:

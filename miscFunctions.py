@@ -29,7 +29,7 @@ def encoder_to_odo(enc):
     rot = 12  # https://www.pololu.com/product/3542/resources
     gear = 73.2  # https://docs.leorover.tech/documentation/leo-rover-wheels/motors-specification#buehler-motors-1-61-077-414
     wheelDi = 125  # mm, https://docs.leorover.tech/documentation/leo-rover-wheels/tires-dimensions
-    odo = enc / rot / gear * np.pi() * wheelDi
+    odo = enc / rot / gear * np.pi * wheelDi
     return odo
 
 
@@ -55,9 +55,11 @@ class ReadSerialTurtle:
                     gyro = (float(data[4]), float(data[5]), float(data[6]))
                     acc = (float(data[7]), float(data[8]), float(data[9]))
                     mag = (float(data[10]), float(data[11]), float(data[12]))
-                    enc = float(data[13])
-                    t = float(data[14])
+                    enc_all = (float(data[13]), float(data[14]), float(data[15]), float(data[16]))
+                    t = float(data[17])
                     IMU = (euler, gyro, acc, mag)
+                    enc = enc_all[0] + enc_all[1] + enc_all[2] + enc_all[3]
+                    enc = enc/4
                     break
                 elif time.time()-t1 >= .5:
                     IMU = ((0,0,0), (0,0,0), (0,0,0),(0,0,0))
@@ -69,7 +71,7 @@ class ReadSerialTurtle:
             enc = None
             t = None
 
-        return IMU, enc, t
+        return IMU, encoder_to_odo(enc), t
 
     def stopRead(self):
         if self.ser != None:
@@ -77,9 +79,6 @@ class ReadSerialTurtle:
 
 
 if __name__ == '__main__':
-    # ser = ReadSerialTurtle('COM10')
-    scan = []
-    scan.append([0, 90, 180, 270, 300])
-    scan.append([1, 1, 1, 1, 1])
-    A = find_center(scan)
-    print(A)
+    ser = ReadSerialTurtle('COM10')
+    while True:
+        print(ser.read_data())

@@ -119,12 +119,14 @@ class TurtleLidarDB:
         rows = self.c.fetchall()
         k = max(rows)
 
+        ImageData = {}
         LidarData = {}
         for i in range(k[0]):
             data = self.get_lidar_data(i+1)
             dt = datetime.fromtimestamp(data['Time'])
             date_time = dt.strftime("%m-%d-%Y_%H.%M.%S")
             LidarData[date_time] = io.StringIO()
+            ImageData[date_time] = data["image"]
 
             writer = csv.writer(LidarData[date_time], dialect='excel', delimiter=',')
             writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',
@@ -147,6 +149,14 @@ class TurtleLidarDB:
                 zipdata.compress_type = zipfile.ZIP_BZIP2
                 zipdata.date_time = time.localtime(time.time())[:6]
                 zf.writestr(zipdata, LidarData[file].getvalue())
+
+                if ImageData[file] is not None and ImageData[file] != 'Image':
+                    filename = file + '.JPEG'
+                    zipdata = zipfile.ZipInfo(filename)
+                    zipdata.compress_type = zipfile.ZIP_BZIP2
+                    zipdata.date_time = time.localtime(time.time())[:6]
+                    zf.writestr(zipdata, ImageData[file])
+
         zip_file.seek(0)
         return zip_file
 

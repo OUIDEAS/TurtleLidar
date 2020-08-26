@@ -159,7 +159,7 @@ def scan_endpoint():
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)
 
-	return 'hi', 200
+	return 'Scanning', 200
 
 # a-button api endpoint
 # Joystick api endpoint???

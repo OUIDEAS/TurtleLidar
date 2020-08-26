@@ -1,4 +1,4 @@
-function gamepadLoop(controller, readToggle) { // reference: https://github.com/luser/gamepadtest/blob/master/gamepadtest.js    
+function gamepadLoop(controller, readToggle, last_press, last_pressB) { // reference: https://github.com/luser/gamepadtest/blob/master/gamepadtest.js
     var val = controller.buttons[1];
     var pressed = val == 1.0;
     if (typeof(val) == "object") {
@@ -6,7 +6,7 @@ function gamepadLoop(controller, readToggle) { // reference: https://github.com/
         val = val.value;
     }
     //console.log('button state ' + pressed)
-    if (pressed) {
+    if (pressed && last_pressB != pressed) {
         readToggle = !readToggle;
 
         // change state display
@@ -18,6 +18,8 @@ function gamepadLoop(controller, readToggle) { // reference: https://github.com/
         }
         $('#controller-status').text(stateText);
     }
+    last_pressB = pressed;
+
     if (readToggle) {
         var aBtnId = 0
         val = controller.buttons[aBtnId];
@@ -28,7 +30,7 @@ function gamepadLoop(controller, readToggle) { // reference: https://github.com/
         }
         //console.log('A-button pressed: ' + pressed);
         // change a btn display value
-        if (pressed) {
+        if (pressed && pressed != last_press) {
             $('#ctrl-a-btn-val').text('Pressed')
 
             // a btn api call
@@ -40,7 +42,7 @@ function gamepadLoop(controller, readToggle) { // reference: https://github.com/
                 url: "/api/scan",
                 data: {'hello': 'test :)', 'world': 0.001},
                 complete: function(data) {
-                    alert(data.responseText);
+                    // alert(data.responseText);
                 },
                 error: function(e) {
                     console.log('Failed API call...');
@@ -51,7 +53,7 @@ function gamepadLoop(controller, readToggle) { // reference: https://github.com/
         } else {
             $('#ctrl-a-btn-val').text('Not Pressed')
         }
-        
+        last_press = pressed;
         
         var i = 0 // left stick, left-right
         //console.log("Axis: " + String(i));
@@ -89,7 +91,7 @@ function gamepadLoop(controller, readToggle) { // reference: https://github.com/
         //console.log('Inactive.');
     }
 
-    setTimeout(function(){gamepadLoop(controller, readToggle);}, 50);
+    setTimeout(function(){gamepadLoop(controller, readToggle, last_press, last_pressB);}, 50);
 }
 
 //console.log('waiting for ctrl input')
@@ -99,5 +101,5 @@ window.addEventListener("gamepadconnected", function(e) {
     gp.index, gp.id,
     gp.buttons.length, gp.axes.length);
     $('#controller-status').text("Status: Reading Input (press 'B' to stop).");
-    gamepadLoop(gp, true);
+    gamepadLoop(gp, true, false, false);
 });

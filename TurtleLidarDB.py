@@ -23,7 +23,7 @@ class TurtleLidarDB:
         create_table_sql = """CREATE TABLE IF NOT EXISTS LidarData (
                                             id integer PRIMARY KEY,
                                             timestamp REAL NOT NULL,
-                                            odometer REAL,
+                                            odometer blob,
                                             lidar blob,
                                             avgR REAL,
                                             stdR REAL,
@@ -50,6 +50,7 @@ class TurtleLidarDB:
         # GYRO = bz2.compress(Gyro)
         Image = pickle.dumps(image)
         # IMAGE = bz2.compress(Image)
+        ODO = pickle.dumps(odo)
 
         sql = ''' INSERT INTO LidarData (timestamp,odometer,lidar,avgR,stdR,minR,maxR,xCenter,yCenter,gyro,Image, batVolt, Deleted)
                       VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) '''
@@ -57,7 +58,7 @@ class TurtleLidarDB:
         # cur = conn.cursor()
         # for item in range(len(radius)):
         de = "False"
-        data = (Time, odo, LIDAR, avgR, stdR, minR, maxR, xCenter, yCenter, Gyro, Image, batVolt, de)
+        data = (Time, ODO, LIDAR, avgR, stdR, minR, maxR, xCenter, yCenter, Gyro, Image, batVolt, de)
         self.c.execute(sql, data)
 
         return self.c.lastrowid
@@ -65,12 +66,16 @@ class TurtleLidarDB:
     def get_table_data(self):
         self.c.execute('''SELECT id,timestamp,odometer, avgR, stdR, minR, maxR, xCenter, yCenter, batVolt FROM LidarData''')
         rows = self.c.fetchall()
-        # Y = []
-        # for row in rows:
-        #     print(row)
-        #     X = [0 if v is None else v for v in row]
-        #     Y.append(X)
-        return rows
+        out = []
+        for row in rows:
+            row = list(row)
+            o = pickle.loads(row[2])
+            if type(o) is list:
+                row[2] = (o[0] + o[1] + o[2] + o[3])/4
+            else:
+                row[2] = 0
+            out.append(row)
+        return out
 
     def get_lidar_data(self, rowID=1):
         self.c.execute("SELECT * FROM LidarData WHERE id=?", (rowID,))
@@ -83,7 +88,8 @@ class TurtleLidarDB:
             LidarData = {
                 "Lidar": pickle.loads(bz2.decompress(row[3])),
                 "Time": row[1],
-                "odo": row[2],
+                # "odo": row[2],
+                "odo": pickle.loads(row[2]),
                 "AvgR": row[4],
                 "StdRadius": row[5],
                 "minR": row[6],
@@ -232,5 +238,7 @@ class TurtleLidarDB:
 if __name__ == "__main__":
 
     with TurtleLidarDB() as db:
-        db.create_csv_zip()
+        # db.create_csv_zip()
         # db.save_images()
+        X = db.get_table_data()
+        print(X)

@@ -12,7 +12,7 @@ class TurtleException(Exception):
 
 
 class TurtleDriver:
-    def __init__(self, SerialPortName="/dev/ttyS0", LidarPortName='/dev/ttyUSB0',
+    def __init__(self, SerialPortName="/dev/ttyS0", LidarPortName='/dev/ttyUSB1',
                  min_ang=-90, max_ang=90, min_duty=2400, max_duty=4800):
 
         # Turtle Shield
@@ -71,6 +71,7 @@ class TurtleDriver:
         f = frame.servo(channel, duty)
         status = self.comm.proccess_command(f)
         status = status.decode('utf-8')
+        # print(status)
 
         if not status or not status == " OK \r\n":
             # rospy.logerr("Did not receive a valid response after servo command")
@@ -93,6 +94,7 @@ class TurtleDriver:
 
     def publish_firmware_ver(self):
         firmware_ver = self.comm.proccess_command(frame.firmware_ver())
+        # print(firmware_ver)
         firmware_ver = firmware_ver.decode("utf-8")
 
         if not firmware_ver or not firmware_ver.endswith("\r\n"):

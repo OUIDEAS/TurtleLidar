@@ -2,8 +2,8 @@ import numpy as np
 import time
 import serial
 import re
-
 from ellipse import LsqEllipse
+
 
 def find_center(scan):
     # Find Center of circle and new radius
@@ -34,47 +34,60 @@ def encoder_to_odo(enc):
 
 
 class ReadSerialTurtle:
-    def __init__(self, port='/dev/ttyACM0', baud=115200):
+    # def __init__(self, port='/dev/ttyACM0', baud=115200):
+    def __init__(self, port='/dev/ttyUSB0', baud=115200):
         try:
-            self.ser = serial.Serial(port, baud)
+            self.ser = serial.Serial(port, baud, timeout=5)
         except serial.SerialException as e:
             print(e)
             self.ser = None
 
     def read_data(self):
-        t1 = time.time()
-        if self.ser != None:
-            while True:
-                read_serial = self.ser.readline()
-                data = read_serial.decode('utf-8')
-                data = re.sub(r'[()]', '', data)
-                data = data.split(", ")
+        # t1 = time.time()
+        if self.ser is not None and self.ser.in_waiting > 0:
+            # read_serial = self.ser.readline()
+            read_serial = self.doRead()
+            data = read_serial.decode('utf-8')
+            data = re.sub(r'[()]', '', data)
+            data = data.split(", ")
 
-                if data[0] == "data":
-                    euler = (float(data[1]), float(data[2]), float(data[3]))
-                    gyro = (float(data[4]), float(data[5]), float(data[6]))
-                    acc = (float(data[7]), float(data[8]), float(data[9]))
-                    mag = (float(data[10]), float(data[11]), float(data[12]))
-                    enc_all = (float(data[13]), float(data[14]), float(data[15]), float(data[16]))
-                    t = float(data[17])
-                    IMU = (euler, gyro, acc, mag)
-                    enc = enc_all[0] + enc_all[1] + enc_all[2] + enc_all[3]
-                    enc = enc/4
-                    break
-                elif time.time()-t1 >= .5:
-                    IMU = ((0,0,0), (0,0,0), (0,0,0),(0,0,0))
-                    enc = 0
-                    t = 0
-                    break
+            if data[0] == "data":
+                euler = (float(data[1]), float(data[2]), float(data[3]))
+                gyro = (float(data[4]), float(data[5]), float(data[6]))
+                acc = (float(data[7]), float(data[8]), float(data[9]))
+                mag = (float(data[10]), float(data[11]), float(data[12]))
+                enc_all = (float(data[13]), float(data[14]), float(data[15]), float(data[16]))
+                t = float(data[17])
+                IMU = (euler, gyro, acc, mag)
+                enc = (encoder_to_odo(enc_all[0]), encoder_to_odo(enc_all[1]), encoder_to_odo(enc_all[2]), encoder_to_odo(enc_all[3]))
+                # enc = enc_all[0] + enc_all[1] + enc_all[2] + enc_all[3]
+                # enc = enc/4
+                # break
+            else:
+                IMU = ((0,0,0), (0,0,0), (0,0,0),(0,0,0))
+                enc = (0,0,0,0)
+                t = 0
         else:
-            IMU = None
-            enc = None
+            IMU = ((0,0,0), (0,0,0), (0,0,0),(0,0,0))
+            enc = (0,0,0,0)
             t = None
 
-        return IMU, encoder_to_odo(enc), t
+        return IMU, enc, t
+
+    def doRead(self):
+        tout = 1
+        term = '\n'
+        matcher = re.compile(term)  # gives you the ability to search for anything
+        tic = time.time()
+        buff = self.ser.read(128)
+        # you can use if not ('\n' in buff) too if you don't like re
+        while ((time.time() - tic) < tout) and (not matcher.search(buff)):
+            buff += self.ser.read(128)
+
+        return buff
 
     def stopRead(self):
-        if self.ser != None:
+        if self.ser is not None:
             self.ser.close()
 
 

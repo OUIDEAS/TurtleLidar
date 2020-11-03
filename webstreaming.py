@@ -143,7 +143,7 @@ def scan_endpoint():
 	# Grab Image to send to other script
 	# if SendFrame != None:
 	with lock:  # Unsure if this is needed?
-		if SendFrame != None:
+		if SendFrame is not None:
 			Image = SendFrame
 			Image = cv2.imencode('.png', Image)[1]
 			data_encode = np.array(Image)
@@ -168,8 +168,8 @@ def drive_endpoint():
 	# if not request.json:
 	#     print(request.__dict__)
 	#     return None, 400
-	print(request.method)
-	print(request.form)
+	# print(request.method)
+	# print(request.form)
 	print(request.form['lr'])  # Left Right
 	print(request.form['ud'])  # Up Down
 	# print(request.json)
@@ -187,7 +187,7 @@ def drive_endpoint():
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)
 
-	return jsonify({'lr': request.form['lr'], 'ud':request.form['ud']}), 200
+	return jsonify({'lr': request.form['lr'], 'ud':request.form['ud']}), 50
 
 
 # check to see if this is the main thread of execution

@@ -2,6 +2,8 @@
 # Pi 4 Dependency install script
 
 # Intalling Dependencies
+python3 -m pip install --upgrade pip
+
 sudo pip3 install lsq-ellipse
 sudo apt-get install libatlas-base-dev
 sudo pip3 install imutils
@@ -11,7 +13,8 @@ sudo apt-get --yes --force-yes install libatlas-base-dev
 sudo apt-get install libqtgui4
 sudo apt install libqt4-test
 sudo pip3 install zmq
-# pip3 install circle-fit # Not working due to scipy problems...
+sudo apt install -y python3-scipy
+sudo pip3 install circle-fit # Not working due to scipy problems..., think I got it to work
 sudo apt-get install network-manager
 # sudo nmcli dev wifi connect NETWORK_NAME password NETWORK_PASSWORD
 
@@ -26,7 +29,7 @@ sudo install-wifi
 
 # make a rule for how to deal with assigning wifi adapter names
 # https://www.raspberrypi.org/forums/viewtopic.php?t=198946
-# ln -nfs /dev/null /etc/systemd/network/99-default.link
+# sudo ln -nfs /dev/null /etc/systemd/network/99-default.link
 # sudo nano /etc/udev/rules.d/72-wlan-geo-dependent.rules
 
 # Setting up accsess point
@@ -51,3 +54,9 @@ sudo install-wifi
 
 # need to just have the file written I guess
 #sudo nano /etc/hostapd/hostapd.conf
+
+sudo service hostapd stop
+sudo service dnsmasq stop
+sleep 1
+sudo service hostapd start
+sudo service dnsmasq start

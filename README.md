@@ -1,11 +1,11 @@
 # Turtle Rover Lidar Pipe Scanner
 
 Reuirements:
-sudo pip3 install --upgrade pip
+```sudo pip3 install --upgrade pip```
 
 ONLY FOR WEBSERVER SO FAR:
 
-sudip pip3 install setuptools imutils numpy opencv-python-headless flask zmq
+```sudo pip3 install setuptools imutils numpy opencv-python-headless flask zmq```
 
 Repository for Turtle Rover pipe scanning robot with lidar gimbal
 * [Webstreaming.py](webstreaming.py) is the main script to run the flask based web server where user inputs will come from and then be sent through pyzmq to a bufferscript.

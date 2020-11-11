@@ -27,8 +27,10 @@ tlast = time.time()
 
 motorBuffer = []
 n = 10  # length of buffer
-
-td = TurtleDriver()
+try:
+    td = TurtleDriver()
+except:
+    td = TurtleDriver(SerialPortName="/dev/serial0", LidarPortName='/dev/ttyUSB0')
 fv = td.publish_firmware_ver()
 print("Turtle Shield Firmware Version:", fv)
 
@@ -70,14 +72,16 @@ try:
                     td.stopTurtle()
                     time.sleep(1)
                     ScanTime = time.time()
+                    print("Beginning Zero")
+                    td.zeroLidar()
                     scan = td.lidarScan()
+                    print("scan finished... wait")
 
                     # Adjust data for circle center
-                    print("adjusting")
                     pipe_scan = find_center(scan)
 
                     # Access data from micrcontroller
-                    print("MicroController")
+                    print("Encoder and IMU data")
                     data = ser.read_data()
 
                     LidarData = {
@@ -94,12 +98,14 @@ try:
                     }
 
                     batVolt = td.battery_status()
-
+                    print("saving Data")
                     with TurtleLidarDB() as db:
                         db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                                    LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
                                                    LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], data[0],
                                                    pkt[1], batVolt)
+
+                    print("done")
             if topic == "shutdown":
                 td.stopTurtle()
                 td.shutdownLidar()

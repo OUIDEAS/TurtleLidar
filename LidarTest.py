@@ -1,19 +1,29 @@
-from RP_LIDAR import RPLidar
+from RP_LIDAR import RPLidar, RPLidarException
 import time
 from TurtleLidarDB import TurtleLidarDB
-from circle_fit import hyper_fit
+from miscFunctions import find_center
 import numpy as np
 import serial
 import re
-import cv2
-import imutils
-from imutils.video import VideoStream
+# import cv2
+# import imutils
+# from imutils.video import VideoStream
 # from TurtleDriverClass import TurtleDriver
 
-PORT_NAME = 'COM7'
-# PORT_NAME = '/dev/ttyUSB0'
+# PORT_NAME = 'COM7'
+PORT_NAME = '/dev/ttyUSB1'
 
+def doRead(ser):
+    tout = 1
+    term = '\n'
+    matcher = re.compile(term)    #gives you the ability to search for anything
+    tic     = time.time()
+    buff    = ser.read(128)
+    # you can use if not ('\n' in buff) too if you don't like re
+    while ((time.time() - tic) < tout) and (not matcher.search(buff)):
+       buff += ser.read(128)
 
+    return buff
 
 def run():
     '''Main function'''
@@ -22,17 +32,26 @@ def run():
 
     ang = []
     dis = []
-
-    try:
-        print('Recording measurments... Press Crl+C to stop.')
-        for measurment in lidar.iter_measures():
-            # line = '\t'.join(str(v) for v in measurment)
-            ang.append(measurment[2])
-            dis.append(measurment[3])
-            if time.time() - t >= 3:
-                break
-    except KeyboardInterrupt:
-        print('Stoping.')
+    for i in range(10):
+        try:
+            print('Recording measurments... Press Crl+C to stop.')
+            for measurment in lidar.iter_measures():
+                # line = '\t'.join(str(v) for v in measurment)
+                if time.time() - t >= 5:
+                    if measurment[3] != 0:
+                        ang.append(measurment[2])
+                        dis.append(measurment[3])
+                if time.time() - t >= 10:
+                    break
+        except KeyboardInterrupt:
+            print('Stoping.')
+        except RPLidarException as e:
+            print(e)
+            continue
+        except Exception as e:
+            print(e)
+        finally:
+            break
     lidar.stop()
     lidar.stop_motor()
     lidar.disconnect()
@@ -44,26 +63,25 @@ def run():
 
 if __name__ == '__main__':
     X = run()
-
+    print(X)
+    print("Scan Finished")
     # Finding center of circle
-    rad2deg = np.pi / 180
-    th = np.asarray(X[0]) * rad2deg
-    X_lidar = X[1] * np.cos(th)
-    Y_lidar = X[1] * np.sin(th)
-    coord = []
-    for i in range(len(X_lidar)):
-        coord.append([X_lidar[i], Y_lidar[i]])
-    circle = hyper_fit(coord)
-    X_lidar = X_lidar - circle[0]
-    Y_lidar = Y_lidar - circle[1]
-    r = np.sqrt(np.square(X_lidar) + np.square(Y_lidar))
+    print("Adjusting")
+    center = find_center(X)
+    r = center[0]
 
     # Gathering data from micro controller
     data = ["no"]
-    ser = serial.Serial('COM10', 115200)
+    # ser = serial.Serial('COM10', 115200)
     # ser = serial.Serial('/dev/ttyACM0', 115200)
+    print("Read Serial")
+    ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
+    t1 = time.time()
+    print("reading")
     while data[0] != "data":
         read_serial = ser.readline()
+        # read_serial = doRead(ser)
+        # read_serial = b'no'
         data = read_serial.decode('utf-8')
         data = re.sub(r'[()]', '', data)
         data = data.split(", ")
@@ -72,18 +90,23 @@ if __name__ == '__main__':
             gyro = (float(data[4]), float(data[5]), float(data[6]))
             acc = (float(data[7]), float(data[8]), float(data[9]))
             mag = (float(data[10]), float(data[11]), float(data[12]))
-            enc = float(data[13])
-            t = float(data[14])
+            enc = (float(data[13]), float(data[14]), float(data[15]), float(data[16]))
             gdata = (euler, gyro, acc, mag)
+        elif time.time() - t1 >= 5:
+            gdata = ((0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0))
+            enc = (0, 0, 0, 0)
+            break
 
     # Getting image from camera
-    vs = VideoStream(src=0).start()
-    frame = vs.read()
-    frame = imutils.resize(frame, width=600)
-    Save_Image = frame
-    Save_Image = cv2.imencode('.png', Save_Image)[1]
-    data_encode = np.array(Save_Image)
-    str_encode = data_encode.tostring()
+    # vs = VideoStream(src=0).start()
+    # frame = vs.read()
+    # frame = imutils.resize(frame, width=600)
+    # Save_Image = frame
+    # Save_Image = cv2.imencode('.png', Save_Image)[1]
+    # data_encode = np.array(Save_Image)
+    # str_encode = data_encode.tostring()
+
+    str_encode = 'Image'
 
     LidarData = {
         "Lidar": tuple(zip(X[0], X[1])),
@@ -93,15 +116,15 @@ if __name__ == '__main__':
         "StdRadius": np.std(r),
         "minR": min(r),
         "maxR": max(r),
-        "xCenter": circle[0],
-        "yCenter": circle[1]
+        "xCenter": center[1][0],
+        "yCenter": center[1][1]
     }
 
     batVolt = 6*3.7
 
     # td = TurtleDriver()
     # batVolt = td.battery_status()
-
+    print("Save Data")
     with TurtleLidarDB() as db:
         db.create_lidar_table()
         db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
@@ -116,5 +139,6 @@ if __name__ == '__main__':
     print("maxR: ",LidarData["maxR"])
     print("xCenter: ",LidarData["xCenter"])
     print("yCenter: ",LidarData["yCenter"])
-    print("gyro: ", gyro)
     print("Battery: ", batVolt)
+    print("gyro: ", gyro)
+

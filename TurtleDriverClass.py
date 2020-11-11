@@ -12,7 +12,7 @@ class TurtleException(Exception):
 
 
 class TurtleDriver:
-    def __init__(self, SerialPortName="/dev/ttyS0", LidarPortName='/dev/ttyUSB1',
+    def __init__(self, SerialPortName="/dev/serial0", LidarPortName='/dev/ttyUSB1',
                  min_ang=-90, max_ang=90, min_duty=2400, max_duty=4800):
 
         # Turtle Shield
@@ -38,7 +38,7 @@ class TurtleDriver:
 
     def initServo(self):
         self.servo_angle = 0
-        self.set_servo(3, self.servo_angle)
+        self.set_servo(3, self.servo_angle - 20)
 
     def shutdownLidar(self):
         self.lidar.stop_motor()
@@ -75,6 +75,7 @@ class TurtleDriver:
 
         if not status or not status == " OK \r\n":
             # rospy.logerr("Did not receive a valid response after servo command")
+            # print("Did not receive a valid response after servo command")
             raise TurtleException("Did not receive a valid response after servo command")
 
     def battery_status(self):
@@ -168,10 +169,9 @@ class TurtleDriver:
         self.set_servo(motor, self.servo_angle)
 
     def zeroLidar(self):
-        self.servo_angle = 0
-        self.set_servo(3, self.servo_angle)
+        self.initServo()
         time.sleep(1)
-        self.steplidar(3, -20)
+        self.steplidar(3, -30)
 
         print("Zeroing Lidar")
 
@@ -220,11 +220,14 @@ class TurtleDriver:
     def lidarScanWrite(self, path='lidarScan.txt', scanLength=5, tries=100):
         outfile = open(path, 'w')
         t1 = time.time()
+        warmup = 5
 
         try:
             for measurment in self.lidar.iter_measures():
-                line = '\t'.join(str(v) for v in measurment)
-                outfile.write(line + '\n')
+                if time.time() - t1 >= warmup:
+                    if measurment[3] != 0:
+                        line = '\t'.join(str(v) for v in measurment)
+                        outfile.write(line + '\n')
                 if time.time() - t1 > scanLength:
                     break
         except RPLidarException as e:

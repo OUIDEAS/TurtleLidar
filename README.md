@@ -6,6 +6,7 @@ Reuirements:
 ONLY FOR WEBSERVER SO FAR:
 
 ```sudo pip3 install setuptools imutils numpy opencv-python-headless flask zmq```
+```sudo pip3 install csv pickle bz2 zipfile sqlite3```
 
 Repository for Turtle Rover pipe scanning robot with lidar gimbal
 * [Webstreaming.py](webstreaming.py) is the main script to run the flask based web server where user inputs will come from and then be sent through pyzmq to a bufferscript.

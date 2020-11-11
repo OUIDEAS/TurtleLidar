@@ -114,6 +114,13 @@ def generate():
 		# yield the output frame in the byte format
 		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
 			bytearray(encodedImage) + b'\r\n')
+@app.route("/scan_status")
+def scan_status():
+	message = "Error with LidarStatus database"
+	with TurtleLidarDB() as db:
+		message = str(db.get_lidar_status())
+	print(message)
+	return message
 
 @app.route("/video_feed")
 def video_feed():

@@ -17,6 +17,10 @@ class TurtleLidarDB:
         except Error as e:
             print(e)
 
+        exists = self.check_lidar_status_table_exists()
+        if(exists == False):
+            self.create_LidarStatus_table()
+
         return self
 
     def create_lidar_table(self):
@@ -83,10 +87,30 @@ class TurtleLidarDB:
             self.c.execute(sql, data)
         return self.c.lastrowid
 
+    def check_lidar_status_table_exists(self):
+        exists = False
+        try:
+            self.c.execute('''SELECT id,timestamp, status FROM LidarStatus''')
+            data = self.c.fetchall()
+            #print(data)
+            exists = True
+        except sqlite3.OperationalError as e:
+            print(e)
+            exists = False
+
+        return exists
+
     def get_lidar_status(self):
-        self.c.execute('''SELECT id,timestamp, status FROM LidarStatus''')
-        rows = self.c.fetchall()
-        return rows
+        message = ""
+        try:
+            self.c.execute('''SELECT id,timestamp, status FROM LidarStatus''')
+            rows = self.c.fetchall()
+            message = rows[0][2]
+            #print(rows)
+        except Error as e:
+            print(e)
+
+        return message
 
     def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR, minR, maxR, xCenter, yCenter, gyro, image, batVolt):
         # lidar = tuple(zip(angle, radius))
@@ -288,11 +312,14 @@ def printLidarStatus(msg):
 
 if __name__ == "__main__":
 
-    printLidarStatus("Ready")
+    #printLidarStatus("Ready")
 
     with TurtleLidarDB() as db:
+        db.check_lidar_status_table_exists()
         # db.create_LidarStatus_table()
-        # db.create_lidar_status_input("Ready")
+        X = db.get_lidar_status()
+        print(X)
+        db.create_lidar_status_input("Test...")
         X = db.get_lidar_status()
         print(X)
         # db.create_csv_zip()

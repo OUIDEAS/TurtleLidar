@@ -1,7 +1,7 @@
 import zmq # package is pyzmq
 import time
 from TurtleDriverClass import TurtleDriver, TurtleException
-from TurtleLidarDB import TurtleLidarDB
+from TurtleLidarDB import TurtleLidarDB, printLidarStatus
 import numpy as np
 from miscFunctions import find_center, ReadSerialTurtle
 import utils
@@ -40,6 +40,7 @@ ser = ReadSerialTurtle()
 
 with TurtleLidarDB() as db:
     db.create_lidar_table()
+    db.create_LidarStatus_table()
 
 for i in range(n):
     # Makes fake buffer
@@ -68,20 +69,20 @@ try:
                     tlast = time.time()
             if topic == "scan":
                 if pkt[0] != False:
-                    print("Starting Scan")
+                    printLidarStatus("Starting Scan")
                     td.stopTurtle()
                     time.sleep(1)
                     ScanTime = time.time()
-                    print("Beginning Zero")
+                    printLidarStatus("Beginning Zero")
                     td.zeroLidar()
+                    printLidarStatus("Lidar Zeroed...Scanning...")
                     scan = td.lidarScan()
-                    print("scan finished... wait")
+                    printLidarStatus("Processing Data")
 
                     # Adjust data for circle center
                     pipe_scan = find_center(scan)
 
                     # Access data from micrcontroller
-                    print("Encoder and IMU data")
                     data = ser.read_data()
 
                     LidarData = {
@@ -98,14 +99,13 @@ try:
                     }
 
                     batVolt = td.battery_status()
-                    print("saving Data")
                     with TurtleLidarDB() as db:
                         db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                                    LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
                                                    LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], data[0],
                                                    pkt[1], batVolt)
 
-                    print("done")
+                    printLidarStatus("Scan Finished...Ready")
             if topic == "shutdown":
                 td.stopTurtle()
                 td.shutdownLidar()

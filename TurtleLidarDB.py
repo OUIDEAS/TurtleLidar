@@ -42,6 +42,52 @@ class TurtleLidarDB:
         except Error as e:
             print(e)
 
+    def create_LidarStatus_table(self):
+        create_table_sql = """CREATE TABLE IF NOT EXISTS LidarStatus (
+                                            id integer PRIMARY KEY,
+                                            timestamp REAL NOT NULL,
+                                            status TEXT
+                                        );"""
+
+        try:
+            self.c.execute(create_table_sql)
+
+            self.c.execute('''SELECT id FROM LidarStatus''')
+            rows = self.c.fetchall()
+            if not rows:
+                sql = ''' INSERT INTO LidarStatus (timestamp, status)
+                                      VALUES(?,?) '''
+                data = (time.time(), "Ready")
+                self.c.execute(sql, data)
+            else:
+                sql = ''' UPDATE LidarStatus
+                                  SET timestamp = ?,
+                                      status = ?
+                                  WHERE id = ?'''
+                data = (time.time(), "Ready", 1)
+                self.c.execute(sql, data)
+        except Error as e:
+            print(e)
+
+    def create_lidar_status_input(self, msg):
+
+        sql = ''' UPDATE LidarStatus
+                          SET timestamp = ?,
+                              status = ?
+                          WHERE id = ?'''
+        if isinstance(msg, str):
+            data = (time.time(), msg, 1)
+            self.c.execute(sql, data)
+        else:
+            data = (time.time(), "Error", 1)
+            self.c.execute(sql, data)
+        return self.c.lastrowid
+
+    def get_lidar_status(self):
+        self.c.execute('''SELECT id,timestamp, status FROM LidarStatus''')
+        rows = self.c.fetchall()
+        return rows
+
     def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR, minR, maxR, xCenter, yCenter, gyro, image, batVolt):
         # lidar = tuple(zip(angle, radius))
         Lidar = pickle.dumps(lidar)
@@ -81,7 +127,7 @@ class TurtleLidarDB:
         self.c.execute("SELECT * FROM LidarData WHERE id=?", (rowID,))
 
         rows = self.c.fetchall()
-        if len(rows) == 0:
+        if not rows:
             LidarData = None
         for row in rows:
 
@@ -235,10 +281,21 @@ class TurtleLidarDB:
         self.conn.close()
 
 
+def printLidarStatus(msg):
+    with TurtleLidarDB() as DB:
+        DB.create_lidar_status_input(msg)
+
+
 if __name__ == "__main__":
 
+    printLidarStatus("Ready")
+
     with TurtleLidarDB() as db:
+        # db.create_LidarStatus_table()
+        # db.create_lidar_status_input("Ready")
+        X = db.get_lidar_status()
+        print(X)
         # db.create_csv_zip()
         # db.save_images()
-        X = db.get_table_data()
-        print(X)
+        # X = db.get_table_data()
+        # print(X)

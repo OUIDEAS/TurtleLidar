@@ -2,6 +2,7 @@
 
 Reuirements:
 sudo pip3 install --upgrade pip
+
 ONLY FOR WEBSERVER SO FAR:
 
 sudip pip3 install setuptools imutils numpy opencv-python-headless flask zmq

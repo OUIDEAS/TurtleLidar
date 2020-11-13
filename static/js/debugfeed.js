@@ -8,6 +8,7 @@ $(document).ready(function() {
             data: JSON.stringify({lastID: lastID}),
             dataType: "json",
             success: function(data){
+                var showtimestamp = document.getElementById("showtimestamp");
                 var table = document.getElementById("debugtable");
                 var jdata = data;
                 if(jdata[0]['status'] != 'nothingnew')
@@ -17,9 +18,10 @@ $(document).ready(function() {
                         var row = jdata[i]
 
                         var tr = table.insertRow(-1);
-                        var td = tr.insertCell(-1);
-                        td.innerHTML = row[1];
-
+                        if(showtimestamp.checked) {
+                            var td = tr.insertCell(-1);
+                            td.innerHTML = row[1];
+                        }
                         var tabCell = tr.insertCell(-1);
                         tabCell.innerHTML = row[2];
                         lastID = row[0];
@@ -31,7 +33,8 @@ $(document).ready(function() {
                 }
                 else
                     console.log("No new debug data");
-
+                if(document.getElementById('autoscroll').checked)
+                    window.scrollTo(0,document.body.scrollHeight);
                 setTimeout(checkStatus,500);
             }
         });

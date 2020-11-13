@@ -15,10 +15,15 @@
     <link href="{{ url_for('static', filename="css/demo.css")}}" rel="stylesheet" />
 </head>
 <body>
+    <button type="button">Stop Logging</button>
+    <input type="checkbox" id="showtimestamp" name="showtimestamp" value="True">
+    <label for="showtimestamp">Show timestamp</label>
+    <input type="checkbox" id="autoscroll" name="autoscroll" value="True" checked>
+    <label for="autoscroll">Autoscroll</label>
     <table id="debugtable">
         <tbody>
                 <tr>
-                    <td>AAAA</td>
+                    <td>Debug Log:</td>
                 </tr>
         </tbody>
     </table>

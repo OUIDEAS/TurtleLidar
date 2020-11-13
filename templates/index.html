@@ -43,7 +43,7 @@
     -->
             <div class="sidebar-wrapper">
                 <div class="logo">
-                    <a href="./" class="simple-text">
+                    <a href="./" class="simple-text" id="scanstatus">
                         Rover Control
                     </a>
                 </div>
@@ -170,11 +170,11 @@
             <div class="content">
                 <div class="container-fluid">
                     <div class="row">
-                        <div class="col-md-3">
+                        <!-- <div class="col-md-3">
                             <div class="card" id="scanstatus">
                                 test
                             </div>
-                        </div>
+                        </div>-->
                         <div class="col-md-6">
                             <div class="card ">
                                 <div class="card-header ">
@@ -182,7 +182,7 @@
                                     <p class="card-category">Stream from onboard camera.</p>
                                 </div>
                                 <div class="card-body ">
-                                    <img src="{{ url_for('video_feed') }}" class="center-block">
+                                    <img src="{{ url_for('video_feed') }}" class="center-block" width="480">
                                     <!-- <div id="chartPreferences" class="ct-chart ct-perfect-fourth"></div>
                                     <div class="legend">
                                         <i class="fa fa-circle text-info"></i> Open
@@ -263,9 +263,9 @@
                                 </a>
                             </li>
                             <li>
-                                <a href="https://github.com/OUIDEAS/TurtleLidar">
+                                <!-- <a href="https://github.com/OUIDEAS/TurtleLidar">
                                     Project Repository
-                                </a>
+                                </a> -->
                             </li>
                             <li>
                                 <a href="#">

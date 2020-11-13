@@ -81,7 +81,7 @@ class TurtleLidarDB:
             print("Select all error with debug msg " + e)
             return None
 
-        return seldata
+        return seldata.fetchall()
 
     def get_last_n_debug_msg(self,numsel):
         selectsql = '''SELECT * FROM DebugData ORDER BY ID DESC LIMIT ?;'''
@@ -108,7 +108,7 @@ class TurtleLidarDB:
             print("Select last n error with debug msg " + e)
             return None
 
-        return seldata
+        return seldata.fetchall()
 
     def insert_debug_msg(self, msg):
         insertsql = '''INSERT INTO DebugData (timestamp, debugdata) VALUES(?,?) '''
@@ -403,22 +403,26 @@ def printLidarStatus(msg):
 
 if __name__ == "__main__":
 
-    with TurtleLidarDB() as db:
-        db.create_debug_table()
+    #with TurtleLidarDB() as db:
+    #    db.create_debug_table()
         # db.insert_debug_msg("i can has debug?")
-    # for i in range(0,25):
-    #     DebugPrint("tendies " + str(i))
-
+    #for i in range(0,25):
+    #	DebugPrint("tendies " + str(i))
+    #DebugPrint("Hello " + str(time.time()))
     with TurtleLidarDB() as db:
-        data = db.get_last_n_debug_msg(10)
-        # #data = db.get_all_debug_msg()
-        # for row in data:
-        #     print(row[2])
-        lastID = data[1][0]
-        # print(lastID)
-        data = db.get_new_debug_msg_from_ID(lastID)
+        data = db.get_new_debug_msg_from_ID(28)
+
+        # data = db.get_last_n_debug_msg(1000)
+        # print(data)
+        # print("--------------------")
+        # # #data = db.get_all_debug_msg()
+        # # for row in data:
+        # #     print(row[2])
+        # lastID = data[1][0]
+        # # print(lastID)
+        # data = db.get_new_debug_msg_from_ID(lastID)
         for row in data:
-            print(row[2])
+            print(str(row[0]) + "\t" + row[2])
     #printLidarStatus("Ready")
 
     # with TurtleLidarDB() as db:

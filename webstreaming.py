@@ -67,6 +67,11 @@ def downloadFile ():
 		memory_file = db.create_csv()
 	return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
 
+@app.route("/debug")
+def debug():
+	# return the rendered template
+	return render_template("debug.html")
+
 def video_stream(frameCount):
 	# grab global references to the video stream, output frame, and
 	# lock variables
@@ -133,9 +138,10 @@ def debug_feed():
 	if(request.method != 'GET'):
 		try:
 			print(request.method)
-			print(request.form)
-			print(request.form['LastID'])
-			lastID = request.form['LastID']
+			jsondata = request.get_json()
+			print(jsondata)
+			lastID = jsondata['lastID']
+			# lastID = request.form['lastID']
 		except:
 			print("debug feed id parse error")
 			return "ERROR", 400
@@ -145,11 +151,18 @@ def debug_feed():
 	data = None
 	with TurtleLidarDB() as db:
 		if(lastID == -1):
-			data = db.get_last_n_debug_msg(25)
+			data = db.get_last_n_debug_msg(5)
+			print("debug: new sending #"+str(len(data)))
+			data.insert(0, {"status": "new"})
 		elif(lastID >= 0):
 			data = db.get_new_debug_msg_from_ID(lastID)
+			print("debug: sending #"+str(len(data)))
+			if(len(data) <= 0):
+				data = []
+				data.insert(0, {"status": "nothingnew"})
 		data = json.dumps(data)
 	print("more debug...")
+	DebugPrint("Hi " + str(time.time()))
 	return data
 
 @app.route("/video_feed")

@@ -13,8 +13,8 @@ import imutils
 import time
 import cv2
 import zmq
-from TurtleLidarDB import TurtleLidarDB
-
+from TurtleLidarDB import TurtleLidarDB, DebugPrint
+import json
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
@@ -42,6 +42,10 @@ pub = context.socket(zmq.PUB)
 pub.connect(f"tcp://{host}:{port}")
 time.sleep(.1)
 #ZMQ
+with TurtleLidarDB() as db:
+	displayEntries = db.create_debug_table()
+
+DebugPrint("Web server ready...")
 
 @app.route("/")
 def index():
@@ -114,13 +118,39 @@ def generate():
 		# yield the output frame in the byte format
 		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
 			bytearray(encodedImage) + b'\r\n')
+
 @app.route("/scan_status")
 def scan_status():
 	message = "Error with LidarStatus database"
 	with TurtleLidarDB() as db:
 		message = str(db.get_lidar_status())
 	print(message)
-	return message
+	return message, 200
+
+@app.route("/debug_feed", methods=['GET', 'POST'])
+def debug_feed():
+
+	if(request.method != 'GET'):
+		try:
+			print(request.method)
+			print(request.form)
+			print(request.form['LastID'])
+			lastID = request.form['LastID']
+		except:
+			print("debug feed id parse error")
+			return "ERROR", 400
+	else:
+		lastID = -1
+
+	data = None
+	with TurtleLidarDB() as db:
+		if(lastID == -1):
+			data = db.get_last_n_debug_msg(25)
+		elif(lastID >= 0):
+			data = db.get_new_debug_msg_from_ID(lastID)
+		data = json.dumps(data)
+	print("more debug...")
+	return data
 
 @app.route("/video_feed")
 def video_feed():

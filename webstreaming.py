@@ -14,6 +14,7 @@ import time
 import cv2
 import zmq
 from TurtleLidarDB import TurtleLidarDB
+import pretty_errors
 
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs

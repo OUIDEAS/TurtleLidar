@@ -46,8 +46,87 @@ class TurtleLidarDB:
             self.c.execute(create_table_sql)
         except Error as e:
             print(e)
+            
+    def check_debug_table_exists(self):
+        exists = False
+        try:
+            self.c.execute('''SELECT id,timestamp, status FROM DebugData''')
+            data = self.c.fetchall()
+            #print(data)
+            exists = True
+        except sqlite3.OperationalError as e:
+            print(e)
+            exists = False
+
+        return exists
+
+    def create_debug_table(self):
+        create_table_sql = """CREATE TABLE IF NOT EXISTS DebugData (
+                                            id integer PRIMARY KEY,
+                                            timestamp REAL NOT NULL,
+                                            debugdata TEXT
+                                        );"""
+        try:
+            self.c.execute(create_table_sql)
+        except Error as e:
+            print(e)
+            return -1
+        return 0
+
+    def get_all_debug_msg(self):
+        selectsql = '''SELECT * FROM DebugData '''
+        seldata = None
+        try:
+            seldata = self.c.execute(selectsql)
+        except Error as e:
+            print("Select all error with debug msg " + e)
+            return None
+
+        return seldata.fetchall()
+
+    def get_last_n_debug_msg(self,numsel):
+        selectsql = '''SELECT * FROM DebugData ORDER BY ID DESC LIMIT ?;'''
+        try:
+            data = (numsel, )
+            seldata = self.c.execute(selectsql, data)
+            newdata = []
+            alldata = seldata.fetchall()
+            for i in range(len(alldata), 0, -1):
+                newdata.append(alldata[i-1])
+            seldata = newdata
+        except Error as e:
+            print("Select last n error with debug msg " + e)
+            return None
+
+        return seldata
+
+    def get_new_debug_msg_from_ID(self,lastID):
+        selectsql = '''SELECT * FROM DebugData WHERE ID > ? ORDER BY ID ASC LIMIT 100;'''
+        try:
+            data = (lastID, )
+            seldata = self.c.execute(selectsql, data)
+        except Error as e:
+            print("Select last n error with debug msg " + e)
+            return None
+
+        return seldata.fetchall()
+
+    def insert_debug_msg(self, msg):
+        insertsql = '''INSERT INTO DebugData (timestamp, debugdata) VALUES(?,?) '''
+        if isinstance(msg, str):
+            data = (time.time(), msg)
+            self.c.execute(insertsql, data)
+        else:
+            print("Insert error with debug msg " + msg)
+            return -1
+
+        return 0
+
 
     def create_LidarStatus_table(self):
+        if(self.check_lidar_status_table_exists()):
+            return 0
+
         create_table_sql = """CREATE TABLE IF NOT EXISTS LidarStatus (
                                             id integer PRIMARY KEY,
                                             timestamp REAL NOT NULL,
@@ -73,6 +152,8 @@ class TurtleLidarDB:
                 self.c.execute(sql, data)
         except Error as e:
             print(e)
+            return -1
+        return 0
 
     def create_lidar_status_input(self, msg):
 
@@ -84,6 +165,7 @@ class TurtleLidarDB:
             data = (time.time(), msg, 1)
             self.c.execute(sql, data)
         else:
+            #todo wha is this? Insert an error if the 1st try fails?
             data = (time.time(), "Error", 1)
             self.c.execute(sql, data)
         return self.c.lastrowid
@@ -305,25 +387,54 @@ class TurtleLidarDB:
             self.conn.commit()
         self.conn.close()
 
+def DebugPrintStore(msg,bStore):
+    print(msg)
+    if(bStore):
+        with TurtleLidarDB() as DB:
+            DB.insert_debug_msg(msg)
+
+def DebugPrint(msg):
+    DebugPrintStore(msg, True)
 
 def printLidarStatus(msg):
+    print("STATUS: ")
     with TurtleLidarDB() as DB:
         DB.create_lidar_status_input(msg)
 
 
 if __name__ == "__main__":
 
+    #with TurtleLidarDB() as db:
+    #    db.create_debug_table()
+        # db.insert_debug_msg("i can has debug?")
+    #for i in range(0,25):
+    #	DebugPrint("tendies " + str(i))
+    #DebugPrint("Hello " + str(time.time()))
+    with TurtleLidarDB() as db:
+        data = db.get_new_debug_msg_from_ID(28)
+
+        # data = db.get_last_n_debug_msg(1000)
+        # print(data)
+        # print("--------------------")
+        # # #data = db.get_all_debug_msg()
+        # # for row in data:
+        # #     print(row[2])
+        # lastID = data[1][0]
+        # # print(lastID)
+        # data = db.get_new_debug_msg_from_ID(lastID)
+        for row in data:
+            print(str(row[0]) + "\t" + row[2])
     #printLidarStatus("Ready")
 
-    with TurtleLidarDB() as db:
-        db.check_lidar_status_table_exists()
-        # db.create_LidarStatus_table()
-        X = db.get_lidar_status()
-        print(X)
-        db.create_lidar_status_input("Test...")
-        X = db.get_lidar_status()
-        print(X)
-        # db.create_csv_zip()
-        # db.save_images()
-        # X = db.get_table_data()
-        # print(X)
+    # with TurtleLidarDB() as db:
+    #     db.check_lidar_status_table_exists()
+    #     # db.create_LidarStatus_table()
+    #     X = db.get_lidar_status()
+    #     print(X)
+    #     db.create_lidar_status_input("Test...")
+    #     X = db.get_lidar_status()
+    #     print(X)
+    #     # db.create_csv_zip()
+    #     # db.save_images()
+    #     # X = db.get_table_data()
+    #     # print(X)

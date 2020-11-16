@@ -37,17 +37,16 @@ class ReadSerialTurtle:
     # def __init__(self, port='/dev/ttyACM0', baud=115200):
     def __init__(self, port='/dev/ttyUSB0', baud=115200):
         try:
-            # self.ser = serial.Serial(port, baud, timeout=5)
-            self.ser = None
+            self.ser = serial.Serial(port, baud, timeout=5)
         except serial.SerialException as e:
             print(e)
             self.ser = None
 
     def read_data(self):
         # t1 = time.time()
-        data = []
+        data = [0]
         while data[0] != 'data':
-            if self.ser is not None and self.ser.in_waiting > 0:
+            if self.ser is not None:
                 read_serial = self.ser.readline()
                 # read_serial = self.doRead()
                 data = read_serial.decode('utf-8')
@@ -71,10 +70,11 @@ class ReadSerialTurtle:
                     enc = (0,0,0,0)
                     t = 0
                     break
-        else:
-            IMU = ((0,0,0), (0,0,0), (0,0,0),(0,0,0))
-            enc = (0,0,0,0)
-            t = None
+            else:
+                IMU = ((0,0,0), (0,0,0), (0,0,0),(0,0,0))
+                enc = (0,0,0,0)
+                t = None
+                break
 
         return IMU, enc, t
 
@@ -96,6 +96,7 @@ class ReadSerialTurtle:
 
 
 if __name__ == '__main__':
-    ser = ReadSerialTurtle('COM10')
+    #ser = ReadSerialTurtle('COM8')
+    ser = ReadSerialTurtle()
     while True:
         print(ser.read_data())

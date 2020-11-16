@@ -13,7 +13,8 @@ $(document).ready(function() {
                 var jdata = data;
                 if(jdata[0]['status'] != 'nothingnew')
                 {
-                    for (var i = 1;i < jdata.length;i++)
+                    //console.log(data);
+                    for (var i = 0;i < jdata.length;i++)
                     {
                         var row = jdata[i]
 
@@ -27,9 +28,10 @@ $(document).ready(function() {
                         lastID = row[0];
 
                         table.appendChild(tr);
+                        //console.log("Adding "+ row[0]);
                     }
                     //console.log(data);
-                    console.log(lastID);
+                    //console.log(lastID);
                 }
                 else
                     console.log("No new debug data");

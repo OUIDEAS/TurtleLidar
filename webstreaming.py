@@ -163,7 +163,11 @@ def debug_feed():
 				data.insert(0, {"status": "nothingnew"})
 		data = json.dumps(data)
 	print("more debug...")
-	DebugPrint("Hi " + str(time.time()))
+	# DebugPrint("Hi " + str(time.time()))
+	# DebugPrint("Testing " + str(time.time()))
+	# DebugPrint("Bake " + str(time.time()))
+	# DebugPrint("Foo " + str(time.time()))
+	# DebugPrint("Bye " + str(time.time()))
 	return data
 
 @app.route("/video_feed")

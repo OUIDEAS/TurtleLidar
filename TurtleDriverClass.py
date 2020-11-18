@@ -125,11 +125,11 @@ class TurtleDriver:
 
         maxOutput = 1
 
-        speed = forwardReverse * .75
-        turn = leftRight * .75
+        speed = forwardReverse * .6
+        turn = leftRight * .6
 
-        Rspd = speed + turn
-        Lspd = speed - turn
+        Rspd = speed - turn
+        Lspd = speed + turn
 
         # Limiting Output
         if abs(Rspd) > maxOutput:

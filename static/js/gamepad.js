@@ -1,3 +1,26 @@
+function setCookie(cname,cvalue,exdays) {
+  var d = new Date();
+  d.setTime(d.getTime() + (exdays*24*60*60*1000));
+  var expires = "expires=" + d.toGMTString();
+  document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+  var name = cname + "=";
+  var decodedCookie = decodeURIComponent(document.cookie);
+  var ca = decodedCookie.split(';');
+  for(var i = 0; i < ca.length; i++) {
+    var c = ca[i];
+    while (c.charAt(0) == ' ') {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) == 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return "";
+}
+
 function gamepadLoop(controller, readToggle, last_press, last_pressB) { // reference: https://github.com/luser/gamepadtest/blob/master/gamepadtest.js
     var val = controller.buttons[1];
     var pressed = val == 1.0;
@@ -40,7 +63,7 @@ function gamepadLoop(controller, readToggle, last_press, last_pressB) { // refer
             $.ajax({
                 type: "POST",
                 url: "/api/scan",
-                data: {'hello': 'test :)', 'world': 0.001},
+                data: {'value': 'none'},
                 complete: function(data) {
                     // alert(data.responseText);
                 },
@@ -61,7 +84,6 @@ function gamepadLoop(controller, readToggle, last_press, last_pressB) { // refer
         //console.log(lrAxis.toFixed(4));
         //console.log(lrAxis);
         // change lr display value
-        $('#ctrl-lr-val').text(lrAxis.toFixed(4))
 
         i = 1 // left stick, up-down (invert sign)
         //console.log("Axis: " + String(i));
@@ -69,15 +91,37 @@ function gamepadLoop(controller, readToggle, last_press, last_pressB) { // refer
         //console.log(udAxis.toFixed(4));
         //console.log(udAxis);
         // change ud display value
-        $('#ctrl-ud-val').text(udAxis.toFixed(4))
+        var lrflipcheck = document.getElementById("flipLR");
+        var bLRFlip = lrflipcheck.checked;
+        setCookie("LRFlip", bLRFlip.toString(), 30);
 
+        var stickmaxitem = document.getElementById("stickmax");
+        var stickmax = parseFloat(stickmaxitem.value);
+        if(isNaN(stickmax) || stickmax < 0.01 || stickmax > 2.0)
+        {
+            stickmax = 1;
+            //document.getElementById("stickmax").value = 1;
+        }
+
+        setCookie("stickmax", stickmax.toString(), 30);
+
+        udAxis *= stickmax;
+
+        nLRFlip = 1.0;
+        if(bLRFlip)
+            nLRFlip = -1.0;
+
+        lrAxis *= stickmax*nLRFlip;
+
+        $('#ctrl-lr-val').text(lrAxis.toFixed(4))
+        $('#ctrl-ud-val').text(udAxis.toFixed(4))
         // joystick api call
         $.ajax({
             type: "POST",
             url: "/api/drive",
             data: {'lr': lrAxis, 'ud': udAxis},
             complete: function(data) {
-                console.log(data.responseText);
+                //console.log(data.responseText);
             },
             error: function(e) {
                 console.log('Failed API call...');
@@ -103,3 +147,21 @@ window.addEventListener("gamepadconnected", function(e) {
     $('#controller-status').text("Status: Reading Input (press 'B' to stop).");
     gamepadLoop(gp, true, false, false);
 });
+$(document).ready(function()
+{
+    var savedStickMax = getCookie("stickmax");
+    savedStickMax = parseFloat(savedStickMax);
+    if(isNaN(savedStickMax))
+    {
+        savedStickMax = 1;
+    }
+    document.getElementById("stickmax").value = savedStickMax;
+    stickmax = savedStickMax;
+    console.log(savedStickMax);
+
+
+    var lrflipcheck = document.getElementById("flipLR");
+    var bLRFlip = new Boolean(getCookie("LRFlip")).valueOf();
+    //default "" -> false
+    lrflipcheck.checked = bLRFlip;
+})

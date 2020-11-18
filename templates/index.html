@@ -205,6 +205,10 @@
                                     <div id='controller-status' class="stats">
                                         Status: Waiting (press 'B' to start).
                                     </div>
+                                    <div id='input-max-stick' class="stats">
+                                        <label for="stickmax">Max stick:</label>
+                                        <input type="text" id="stickmax" name="stickmax" value="1">
+                                    </div>
                                     <hr>
                                     <table id='controller-data' class="table table-hover "><!--table-striped"> -->
                                         <thead>
@@ -215,6 +219,7 @@
                                             <tr>
                                                 <td>Left-Right Axis</td>
                                                 <td id='ctrl-lr-val'></td>
+                                                <td>Flip?<input type="checkbox" id="flipLR" name="flipLR" value="True" ></td>
                                             </tr>
                                             <tr>
                                                 <td>Up-Down Axis</td>

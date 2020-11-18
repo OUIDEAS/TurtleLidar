@@ -186,8 +186,6 @@ def scan_endpoint():
 	#     return None, 400
 	print(request.method)
 	print(request.form)
-	print(request.form['hello'])
-	print(request.form['world'])
 	# print(request.json)
 	# print(request.get_json(force=True))
 	# response = {

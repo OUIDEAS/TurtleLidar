@@ -93,7 +93,8 @@ function gamepadLoop(controller, readToggle, last_press, last_pressB) { // refer
         // change ud display value
         var lrflipcheck = document.getElementById("flipLR");
         var bLRFlip = lrflipcheck.checked;
-        setCookie("LRFlip", bLRFlip.toString(), 30);
+        if(bLRFlip != getCookie("LRFlip"))
+            setCookie("LRFlip", bLRFlip.toString(), 30);
 
         var stickmaxitem = document.getElementById("stickmax");
         var stickmax = parseFloat(stickmaxitem.value);
@@ -161,7 +162,10 @@ $(document).ready(function()
 
 
     var lrflipcheck = document.getElementById("flipLR");
-    var bLRFlip = new Boolean(getCookie("LRFlip")).valueOf();
+    var cookieLRFlip = getCookie("LRFlip");
+    var bLRFlip = true;
+    if(cookieLRFlip == 'false')
+        var bLRFlip = false;
     //default "" -> false
     lrflipcheck.checked = bLRFlip;
 })

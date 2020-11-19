@@ -51,6 +51,7 @@ DebugPrint("Web server ready...")
 @app.route("/")
 def index():
 	# return the rendered template
+	DebugPrint("Flask: index requested")
 	return render_template("index.html")
 
 @app.route("/sensor-data")
@@ -71,6 +72,7 @@ def downloadFile ():
 @app.route("/debug")
 def debug():
 	# return the rendered template
+	DebugPrint("Flask: debug requested")
 	return render_template("debug.html")
 
 def video_stream(frameCount):
@@ -187,6 +189,8 @@ def scan_endpoint():
 	print(request.method)
 	print(request.form)
 	print("STARTING SCAN...")
+	DebugPrint("Flask: STARTING SCAN...")
+
 	# print(request.json)
 	# print(request.get_json(force=True))
 	# response = {

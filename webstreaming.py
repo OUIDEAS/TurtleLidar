@@ -13,7 +13,7 @@ import imutils
 import time
 import cv2
 import zmq
-import pretty_errors
+# import pretty_errors
 from TurtleLidarDB import TurtleLidarDB, DebugPrint
 import json
 # initialize the output frame and a lock used to ensure thread-safe

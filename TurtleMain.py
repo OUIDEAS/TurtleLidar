@@ -5,7 +5,7 @@ from TurtleLidarDB import TurtleLidarDB, printLidarStatus
 import numpy as np
 from miscFunctions import find_center, ReadSerialTurtle
 import utils
-import pretty_errors
+# import pretty_errors
 
 host = "127.0.0.1"
 port = "5001"

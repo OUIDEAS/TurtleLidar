@@ -1,7 +1,7 @@
 import zmq # package is pyzmq
 import time
 from TurtleDriverClass import TurtleDriver, TurtleException
-from TurtleLidarDB import TurtleLidarDB, printLidarStatus
+from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint
 import numpy as np
 from miscFunctions import find_center, ReadSerialTurtle
 import utils
@@ -71,12 +71,15 @@ try:
             if topic == "scan":
                 if pkt[0] != False:
                     printLidarStatus("Starting Scan")
+                    DebugPrint("Beginning Scan")
                     td.stopTurtle()
                     time.sleep(1)
                     ScanTime = time.time()
                     printLidarStatus("Beginning Zero")
+                    DebugPrint("Beginning Zero")
                     td.zeroLidar()
                     printLidarStatus("Lidar Zeroed...Scanning...")
+                    DebugPrint("Scanning")
                     scan = td.lidarScan()
                     printLidarStatus("Processing Data")
 
@@ -107,6 +110,7 @@ try:
                                                    pkt[1], batVolt)
 
                     printLidarStatus("Scan Finished...Ready")
+                    DebugPrint("Scan Finished")
             if topic == "shutdown":
                 td.stopTurtle()
                 td.shutdownLidar()
@@ -136,11 +140,14 @@ try:
                 td.drive(float(motorBuffer[0][0]), float(motorBuffer[0][1]))
                 motorBuffer.pop(0)
 except Exception as e:
-    print(e)
+    # print(e)
+    DebugPrint(e)
+    printLidarStatus("Exception Occurred")
+    td.stopTurtle()
     td.shutdownLidar()
     ser.stopRead()
-    td.stopTurtle()
 except KeyboardInterrupt:
+    printLidarStatus("Keyboard Interrupt")
+    td.stopTurtle()
     td.shutdownLidar()
     ser.stopRead()
-    td.stopTurtle()

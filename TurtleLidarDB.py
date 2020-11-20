@@ -223,7 +223,7 @@ class TurtleLidarDB:
         for row in rows:
             row = list(row)
             o = pickle.loads(row[2])
-            if type(o) is list:
+            if type(o) is tuple:
                 row[2] = (o[0] + o[1] + o[2] + o[3])/4
             else:
                 row[2] = 0

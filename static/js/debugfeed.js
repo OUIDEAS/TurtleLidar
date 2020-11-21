@@ -14,7 +14,7 @@ $(document).ready(function() {
                 if(jdata[0]['status'] != 'nothingnew')
                 {
                     //console.log(data);
-                    for (var i = 0;i < jdata.length;i++)
+                    for (var i = 1;i < jdata.length;i++)
                     {
                         var row = jdata[i]
 

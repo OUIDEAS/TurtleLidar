@@ -7,6 +7,7 @@ from miscFunctions import find_center, ReadSerialTurtle
 import utils
 # import pretty_errors
 
+DebugPrint("Turtle Main Start...")
 host = "127.0.0.1"
 port = "5001"
 
@@ -32,8 +33,10 @@ try:
     td = TurtleDriver()
 except:
     td = TurtleDriver(SerialPortName="/dev/serial0", LidarPortName='/dev/ttyUSB0')
+    DebugPrint("TurtleDriver(SerialPortName=")
+
 fv = td.publish_firmware_ver()
-print("Turtle Shield Firmware Version:", fv)
+DebugPrint("Turtle Shield Firmware Version:", fv)
 
 td.initServo()
 
@@ -56,7 +59,7 @@ try:
             try:
                 topic = socket.recv_string()
                 pkt = socket.recv_pyobj()
-                print(f"Topic: {topic} => {pkt}")
+                DebugPrint(f"Topic: {topic} => {pkt}")
             except Exception:
                 topic = "Bad Input"
 
@@ -141,12 +144,13 @@ try:
                 motorBuffer.pop(0)
 except Exception as e:
     # print(e)
-    DebugPrint(e)
+    DebugPrint("Turtle Main exception " + str(e))
     printLidarStatus("Exception Occurred")
     td.stopTurtle()
     td.shutdownLidar()
     ser.stopRead()
 except KeyboardInterrupt:
+    DebugPrint("TurtleMain Keyboard Interrupt")
     printLidarStatus("Keyboard Interrupt")
     td.stopTurtle()
     td.shutdownLidar()

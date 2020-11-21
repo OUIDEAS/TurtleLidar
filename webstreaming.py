@@ -43,8 +43,8 @@ pub = context.socket(zmq.PUB)
 pub.connect(f"tcp://{host}:{port}")
 time.sleep(.1)
 #ZMQ
-with TurtleLidarDB() as db:
-	displayEntries = db.create_debug_table()
+#with TurtleLidarDB() as db:
+#	displayEntries = db.create_debug_table()
 
 DebugPrint("Web server ready...")
 
@@ -154,7 +154,7 @@ def debug_feed():
 	data = None
 	with TurtleLidarDB() as db:
 		if(lastID == -1):
-			data = db.get_last_n_debug_msg(5)
+			data = db.get_last_n_debug_msg(50)
 			print("debug: new sending #"+str(len(data)))
 			data.insert(0, {"status": "new"})
 		elif(lastID >= 0):
@@ -188,7 +188,7 @@ def scan_endpoint():
 	#     return None, 400
 	print(request.method)
 	print(request.form)
-	print("STARTING SCAN...")
+	#print("STARTING SCAN...")
 	DebugPrint("Flask: STARTING SCAN...")
 
 	# print(request.json)

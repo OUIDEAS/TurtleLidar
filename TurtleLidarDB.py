@@ -25,6 +25,7 @@ class TurtleLidarDB:
         return self
 
     def create_lidar_table(self):
+        self.insert_debug_msg("create_lidar_table")
         create_table_sql = """CREATE TABLE IF NOT EXISTS LidarData (
                                             id integer PRIMARY KEY,
                                             timestamp REAL NOT NULL,
@@ -45,7 +46,9 @@ class TurtleLidarDB:
         try:
             self.c.execute(create_table_sql)
         except Error as e:
-            print(e)
+            print("error: create_lidar_table" + str(e))
+            self.insert_debug_msg(e)
+
             
     def check_debug_table_exists(self):
         exists = False
@@ -55,7 +58,9 @@ class TurtleLidarDB:
             #print(data)
             exists = True
         except sqlite3.OperationalError as e:
-            print(e)
+            #print("error: check_debug_table_exists")
+            #print(e)
+            #does not EXIST
             exists = False
 
         return exists
@@ -69,6 +74,7 @@ class TurtleLidarDB:
         try:
             self.c.execute(create_table_sql)
         except Error as e:
+            print("error: create_debug_table")
             print(e)
             return -1
         return 0
@@ -100,7 +106,19 @@ class TurtleLidarDB:
 
         return seldata
 
+    def check_and_create_debug_table(self):
+        if not self.check_debug_table_exists():
+            self.create_debug_table()
+
+        if self.check_debug_table_exists():
+            print("Tried to create debug DB and failed...")
+            return -1
+        return 0
+
     def get_new_debug_msg_from_ID(self,lastID):
+        if(self.check_and_create_debug_table() == -1):
+            return None
+
         selectsql = '''SELECT * FROM DebugData WHERE ID > ? ORDER BY ID ASC LIMIT 100;'''
         try:
             data = (lastID, )
@@ -112,6 +130,13 @@ class TurtleLidarDB:
         return seldata.fetchall()
 
     def insert_debug_msg(self, msg):
+        if not self.check_debug_table_exists():
+            self.create_debug_table()
+
+        if self.check_debug_table_exists():
+            print("Tried to create debug DB and failed...")
+            return -1
+
         insertsql = '''INSERT INTO DebugData (timestamp, debugdata) VALUES(?,?) '''
         if isinstance(msg, str):
             data = (time.time(), msg)
@@ -124,6 +149,7 @@ class TurtleLidarDB:
 
 
     def create_LidarStatus_table(self):
+        self.insert_debug_msg("create_LidarStatus_table")
         if(self.check_lidar_status_table_exists()):
             return 0
 
@@ -144,18 +170,14 @@ class TurtleLidarDB:
                 data = (time.time(), "Ready")
                 self.c.execute(sql, data)
             else:
-                sql = ''' UPDATE LidarStatus
-                                  SET timestamp = ?,
-                                      status = ?
-                                  WHERE id = ?'''
-                data = (time.time(), "Ready", 1)
-                self.c.execute(sql, data)
+                create_lidar_status_input("Ready")
         except Error as e:
-            print(e)
+            self.insert_debug_msg(e)
             return -1
         return 0
 
     def create_lidar_status_input(self, msg):
+        self.insert_debug_msg("create_lidar_status_input")
 
         sql = ''' UPDATE LidarStatus
                           SET timestamp = ?,
@@ -184,6 +206,8 @@ class TurtleLidarDB:
         return exists
 
     def get_lidar_status(self):
+        self.insert_debug_msg("get_lidar_status")
+
         message = ""
         try:
             self.c.execute('''SELECT id,timestamp, status FROM LidarStatus''')
@@ -191,11 +215,13 @@ class TurtleLidarDB:
             message = rows[0][2]
             #print(rows)
         except Error as e:
-            print(e)
+            self.insert_debug_msg(e)
 
         return message
 
     def create_lidar_data_input(self, Time, odo, lidar, avgR, stdR, minR, maxR, xCenter, yCenter, gyro, image, batVolt):
+        self.insert_debug_msg("create_lidar_data_input")
+
         # lidar = tuple(zip(angle, radius))
         Lidar = pickle.dumps(lidar)
         LIDAR = bz2.compress(Lidar)
@@ -217,6 +243,8 @@ class TurtleLidarDB:
         return self.c.lastrowid
 
     def get_table_data(self):
+        self.insert_debug_msg("get_table_data")
+
         self.c.execute('''SELECT id,timestamp,odometer, avgR, stdR, minR, maxR, xCenter, yCenter, batVolt FROM LidarData''')
         rows = self.c.fetchall()
         out = []
@@ -231,6 +259,7 @@ class TurtleLidarDB:
         return out
 
     def get_lidar_data(self, rowID=1):
+        self.insert_debug_msg("get_table_data")
         self.c.execute("SELECT * FROM LidarData WHERE id=?", (rowID,))
 
         rows = self.c.fetchall()
@@ -260,6 +289,8 @@ class TurtleLidarDB:
         return LidarData
 
     def delete_lidar_data(self, RowID):
+        self.insert_debug_msg("delete_lidar_data")
+
         """
         update priority, begin_date, and end date of a task
         :param conn:
@@ -274,6 +305,8 @@ class TurtleLidarDB:
         self.c.execute(sql, data)
 
     def create_csv(self):
+        self.insert_debug_msg("create_csv")
+
         self.c.execute('''SELECT id FROM LidarData''')
         rows = self.c.fetchall()
         k = max(rows)
@@ -320,6 +353,7 @@ class TurtleLidarDB:
         return zip_file
 
     def save_images(self, path='ImageData.zip'):
+        self.insert_debug_msg("save_images")
         self.c.execute('''SELECT id FROM LidarData''')
         rows = self.c.fetchall()
         k = max(rows)
@@ -342,6 +376,8 @@ class TurtleLidarDB:
                         zf.writestr(zipdata, ImageData[file])
 
     def create_csv_zip(self, path='LidarData.zip'):
+        self.insert_debug_msg("create_csv_zip")
+
         self.c.execute('''SELECT id FROM LidarData''')
         rows = self.c.fetchall()
         k = max(rows)
@@ -409,9 +445,9 @@ if __name__ == "__main__":
         # db.insert_debug_msg("i can has debug?")
     #for i in range(0,25):
     #	DebugPrint("tendies " + str(i))
-    #DebugPrint("Hello " + str(time.time()))
+    DebugPrint("Hello " + str(time.time()))
     with TurtleLidarDB() as db:
-        data = db.get_new_debug_msg_from_ID(28)
+        data = db.get_new_debug_msg_from_ID(-1)
 
         # data = db.get_last_n_debug_msg(1000)
         # print(data)
@@ -422,6 +458,7 @@ if __name__ == "__main__":
         # lastID = data[1][0]
         # # print(lastID)
         # data = db.get_new_debug_msg_from_ID(lastID)
+        print("Debug Table:")
         for row in data:
             print(str(row[0]) + "\t" + row[2])
     #printLidarStatus("Ready")

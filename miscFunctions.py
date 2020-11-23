@@ -99,4 +99,6 @@ if __name__ == '__main__':
     #ser = ReadSerialTurtle('COM8')
     ser = ReadSerialTurtle()
     while True:
-        print(ser.read_data())
+        # print(ser.read_data())
+        X = ser.read_data()
+        print(X[1])

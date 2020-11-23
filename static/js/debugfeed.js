@@ -37,9 +37,9 @@ $(document).ready(function() {
                     console.log("No new debug data");
                 if(document.getElementById('autoscroll').checked)
                     window.scrollTo(0,document.body.scrollHeight);
-                setTimeout(checkStatus,500);
+                setTimeout(checkStatus,1000);
             }
         });
     }
-    setTimeout(checkStatus, 500);
+    setTimeout(checkStatus, 1000);
 })

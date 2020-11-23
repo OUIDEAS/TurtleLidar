@@ -36,7 +36,7 @@ except:
     DebugPrint("TurtleDriver(SerialPortName=")
 
 fv = td.publish_firmware_ver()
-DebugPrint("Turtle Shield Firmware Version:", fv)
+DebugPrint("Turtle Shield Firmware Version:" + str(fv))
 
 td.initServo()
 
@@ -49,17 +49,18 @@ with TurtleLidarDB() as db:
 for i in range(n):
     # Makes fake buffer
     # motorBuffer.append([i, -i])
+    print("Stopping motors...")
     motorBuffer.append([0, 0])
 
 try:
     while True:
-        evts = dict(poller.poll(timeout=25))
+        evts = dict(poller.poll(timeout=1))
 
         if socket in evts:
             try:
                 topic = socket.recv_string()
                 pkt = socket.recv_pyobj()
-                DebugPrint(f"Topic: {topic} => {pkt}")
+                print(f"Topic: {topic} => {pkt}")
             except Exception:
                 topic = "Bad Input"
 

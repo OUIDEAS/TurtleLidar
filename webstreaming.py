@@ -89,7 +89,7 @@ def video_stream(frameCount):
 	while True:
 		# read the next frame from the video stream, resize it
 		frame = vs.read()
-		frame = imutils.resize(frame, width=600)
+		frame = imutils.resize(frame, width=480)
 
 		# grab the current timestamp and draw it on the frame
 		timestamp = datetime.datetime.now()
@@ -132,7 +132,7 @@ def scan_status():
 	message = "Error with LidarStatus database"
 	with TurtleLidarDB() as db:
 		message = str(db.get_lidar_status())
-	print(message)
+	#print(message)
 	return message, 200
 
 @app.route("/debug_feed", methods=['GET', 'POST'])
@@ -140,13 +140,13 @@ def debug_feed():
 
 	if(request.method != 'GET'):
 		try:
-			print(request.method)
+			#print(request.method)
 			jsondata = request.get_json()
-			print(jsondata)
+			#print(jsondata)
 			lastID = jsondata['lastID']
 			# lastID = request.form['lastID']
 		except:
-			print("debug feed id parse error")
+			#print("debug feed id parse error")
 			return "ERROR", 400
 	else:
 		lastID = -1
@@ -155,16 +155,16 @@ def debug_feed():
 	with TurtleLidarDB() as db:
 		if(lastID == -1):
 			data = db.get_last_n_debug_msg(50)
-			print("debug: new sending #"+str(len(data)))
+			#print("debug: new sending #"+str(len(data)))
 			data.insert(0, {"status": "new"})
 		elif(lastID >= 0):
 			data = db.get_new_debug_msg_from_ID(lastID)
-			print("debug: sending #"+str(len(data)))
+			#print("debug: sending #"+str(len(data)))
 			if(len(data) <= 0):
 				data = []
 				data.insert(0, {"status": "nothingnew"})
 		data = json.dumps(data)
-	print("more debug...")
+	#print("more debug...")
 	# DebugPrint("Hi " + str(time.time()))
 	# DebugPrint("Testing " + str(time.time()))
 	# DebugPrint("Bake " + str(time.time()))
@@ -228,8 +228,8 @@ def drive_endpoint():
 	#     return None, 400
 	# print(request.method)
 	# print(request.form)
-	print(request.form['lr'])  # Left Right
-	print(request.form['ud'])  # Up Down
+	#print(request.form['lr'])  # Left Right
+	#print(request.form['ud'])  # Up Down
 	# print(request.json)
 	# print(request.get_json(force=True))
 	# response = {

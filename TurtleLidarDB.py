@@ -206,7 +206,7 @@ class TurtleLidarDB:
         return exists
 
     def get_lidar_status(self):
-        self.insert_debug_msg("get_lidar_status")
+        #self.insert_debug_msg("get_lidar_status")
 
         message = ""
         try:

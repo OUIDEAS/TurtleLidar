@@ -75,7 +75,7 @@ function gamepadLoop(controller, readToggle, last_press, last_pressB) { // refer
 
         var stickmaxitem = document.getElementById("stickmax");
         var stickmax = parseFloat(stickmaxitem.value);
-        if(isNaN(stickmax) || stickmax < 0.01 || stickmax > 2.0)
+        if(isNaN(stickmax) || stickmax < 0.3 || stickmax > 2.0)
         {
             stickmax = 1;
             //document.getElementById("stickmax").value = 1;

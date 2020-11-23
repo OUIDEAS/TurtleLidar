@@ -12,7 +12,7 @@ import re
 
 # PORT_NAME = 'COM7'
 PORT_NAME = '/dev/ttyUSB1'
-
+print("PORT: " + PORT_NAME)
 def doRead(ser):
     tout = 1
     term = '\n'

@@ -18,14 +18,20 @@ class TurtleLidarDB:
         except Error as e:
             print(e)
 
+        exists = self.check_lidar_data_table_exists()
+        if(exists == False):
+            print("creating lidar data table")
+            self.create_lidar_table()
+
         exists = self.check_lidar_status_table_exists()
         if(exists == False):
+            print("creating lidar status table")
             self.create_LidarStatus_table()
 
         return self
 
     def create_lidar_table(self):
-        self.insert_debug_msg("create_lidar_table")
+        #self.insert_debug_msg("create_lidar_table")
         create_table_sql = """CREATE TABLE IF NOT EXISTS LidarData (
                                             id integer PRIMARY KEY,
                                             timestamp REAL NOT NULL,
@@ -45,10 +51,21 @@ class TurtleLidarDB:
 
         try:
             self.c.execute(create_table_sql)
+            self.conn.commit()
         except Error as e:
             print("error: create_lidar_table" + str(e))
             self.insert_debug_msg(e)
 
+    def check_lidar_data_table_exists(self):
+        exists = False
+        try:
+            self.c.execute('''SELECT id FROM LidarData''')
+            data = self.c.fetchall()
+            exists = True
+        except sqlite3.OperationalError as e:
+            exists = False
+
+        return exists
             
     def check_debug_table_exists(self):
         exists = False
@@ -73,6 +90,7 @@ class TurtleLidarDB:
                                         );"""
         try:
             self.c.execute(create_table_sql)
+            self.conn.commit()
         except Error as e:
             print("error: create_debug_table")
             print(e)
@@ -141,6 +159,7 @@ class TurtleLidarDB:
         if isinstance(msg, str):
             data = (time.time(), msg)
             self.c.execute(insertsql, data)
+            self.conn.commit()
         else:
             print("Insert error with debug msg " + msg)
             return -1
@@ -161,7 +180,7 @@ class TurtleLidarDB:
 
         try:
             self.c.execute(create_table_sql)
-
+            self.conn.commit()
             self.c.execute('''SELECT id FROM LidarStatus''')
             rows = self.c.fetchall()
             if not rows:
@@ -169,8 +188,9 @@ class TurtleLidarDB:
                                       VALUES(?,?) '''
                 data = (time.time(), "Ready")
                 self.c.execute(sql, data)
+                self.conn.commit()
             else:
-                create_lidar_status_input("Ready")
+                self.create_lidar_status_input("Ready")
         except Error as e:
             self.insert_debug_msg(e)
             return -1
@@ -186,6 +206,7 @@ class TurtleLidarDB:
         if isinstance(msg, str):
             data = (time.time(), msg, 1)
             self.c.execute(sql, data)
+            self.conn.commit()
         else:
             #todo wha is this? Insert an error if the 1st try fails?
             data = (time.time(), "Error", 1)
@@ -200,7 +221,7 @@ class TurtleLidarDB:
             #print(data)
             exists = True
         except sqlite3.OperationalError as e:
-            print(e)
+            #print("check_lidar_status_table_exists -> " + str(e))
             exists = False
 
         return exists
@@ -239,7 +260,7 @@ class TurtleLidarDB:
         de = "False"
         data = (Time, ODO, LIDAR, avgR, stdR, minR, maxR, xCenter, yCenter, Gyro, Image, batVolt, de)
         self.c.execute(sql, data)
-
+        self.conn.commit()
         return self.c.lastrowid
 
     def get_table_data(self):
@@ -303,6 +324,7 @@ class TurtleLidarDB:
 
         data = ("True", RowID)
         self.c.execute(sql, data)
+        self.conn.commit()
 
     def create_csv(self):
         self.insert_debug_msg("create_csv")
@@ -448,7 +470,6 @@ if __name__ == "__main__":
     DebugPrint("Hello " + str(time.time()))
     with TurtleLidarDB() as db:
         data = db.get_new_debug_msg_from_ID(-1)
-
         # data = db.get_last_n_debug_msg(1000)
         # print(data)
         # print("--------------------")

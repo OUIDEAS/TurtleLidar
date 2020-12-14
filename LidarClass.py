@@ -24,11 +24,11 @@ class RPLidarClass():
 
     # def get_scan(self, LaserScan):
     #     self.scan_data = LaserScan
+        return self
 
-    def get_lidar_data(self):
+    def get_lidar_data(self,n):
         # ang = np.array([])
         # dis = np.array([])
-        n = 1
         ang = []
         dis = []
         for i in range(n):
@@ -55,9 +55,9 @@ class RPLidarClass():
 if __name__ == "__main__":
     from matplotlib import pyplot as plt
 
-    with RPLidarClass():
+    with RPLidarClass() as RP:
         print("getting data")
-        X = RPLidarClass.get_lidar_data()
+        X = RP.get_lidar_data(1)
         print(X)
         print("end data")
 

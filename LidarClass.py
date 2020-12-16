@@ -8,8 +8,7 @@ import os, signal
 
 
 class RPLidarClass():
-    def __enter__(self, FILE = ["/home/theo/catkin_ws/src/rplidar_ros/launch/rplidar.launch"]):
-
+    def __enter__(self, FILE=["/home/theo/catkin_ws/src/rplidar_ros/launch/rplidar.launch"]):
         print("launch")
 
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
@@ -17,34 +16,30 @@ class RPLidarClass():
 
         self.launch = roslaunch.parent.ROSLaunchParent(uuid, FILE)
         self.launch.start()
-
-        # rospy.init_node('rplidarNode', anonymous=True)
-        # self.scan_data_sub = rospy.Subscriber('scan', LaserScan, self.get_scan)
-        # time.sleep(10)
-
-    # def get_scan(self, LaserScan):
-    #     self.scan_data = LaserScan
+        rospy.sleep(3)
+        rospy.init_node('rplidarNode', anonymous=True)
+        self.scan_data_sub = rospy.Subscriber('scan', LaserScan, self.get_scan)
+        rospy.sleep(3)
         return self
 
-    def get_lidar_data(self,n):
-        # ang = np.array([])
-        # dis = np.array([])
-        ang = []
-        dis = []
-        for i in range(n):
-            try:
-                msg = rospy.wait_for_message('scan', LaserScan, timeout=1)
-                ranges = msg.ranges
-                angles_min = msg.angle_min
-                angles_max = msg.angle_max
-                angle_array = np.linspace(angles_min, angles_max, np.size(ranges))
-                ang = ang.append(angle_array)
-                dis = dis.append(ranges)
-            except Exception as e:
-                print(e)
-                continue
-            time.sleep(.1)
+    def get_scan(self, LaserScan):
+        self.scan_data = LaserScan
 
+    def get_lidar_data(self, t):
+        tscan = time.time()
+        ang = np.array([])
+        dis = np.array([])
+
+        while time.time() - tscan <= t:
+            msg = self.scan_data
+            ranges = msg.ranges
+            angles_min = msg.angle_min
+            angles_max = msg.angle_max
+            angle_inc = msg.angle_increment
+            angle_array = np.linspace(angles_min, angles_max, np.size(ranges))
+            ang = np.append(ang, angle_array)
+            dis = np.append(dis, ranges)
+            rospy.sleep(.1)
         return ang, dis
 
     def __exit__(self, ext_type, exc_value, traceback):
@@ -57,7 +52,7 @@ if __name__ == "__main__":
 
     with RPLidarClass() as RP:
         print("getting data")
-        X = RP.get_lidar_data(1)
+        X = RP.get_lidar_data(5)
         print(X)
         print("end data")
 

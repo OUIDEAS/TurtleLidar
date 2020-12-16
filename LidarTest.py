@@ -10,8 +10,8 @@ import re
 # from imutils.video import VideoStream
 # from TurtleDriverClass import TurtleDriver
 
-# PORT_NAME = 'COM7'
-PORT_NAME = '/dev/ttyUSB1'
+#PORT_NAME = 'COM4'
+PORT_NAME = '/dev/ttyUSB0'
 print("PORT: " + PORT_NAME)
 def doRead(ser):
     tout = 1

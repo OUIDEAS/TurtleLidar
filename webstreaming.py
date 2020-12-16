@@ -16,6 +16,7 @@ import zmq
 # import pretty_errors
 from TurtleLidarDB import TurtleLidarDB, DebugPrint
 import json
+import LidarPlot
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
@@ -74,7 +75,17 @@ def debug():
 	# return the rendered template
 	DebugPrint("Flask: debug requested")
 	return render_template("debug.html")
-
+@app.route("/plot")
+def plot():
+	image_binary = LidarPlot.GiveTestImg()
+	# response = make_response(image_binary)
+	# response.headers.set('Content-Type', 'image/png')
+	# response.headers.set(
+	# 	'Content-Disposition', 'attachment', filename='plot.png')
+	# return response
+	return send_file(image_binary,
+					 attachment_filename='logo.png',
+					 mimetype='image/png')
 def video_stream(frameCount):
 	# grab global references to the video stream, output frame, and
 	# lock variables

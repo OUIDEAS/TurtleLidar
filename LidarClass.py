@@ -31,14 +31,18 @@ class RPLidarClass():
         dis = np.array([])
 
         while time.time() - tscan <= t:
-            msg = self.scan_data
-            ranges = msg.ranges
-            angles_min = msg.angle_min
-            angles_max = msg.angle_max
-            angle_inc = msg.angle_increment
-            angle_array = np.linspace(angles_min, angles_max, np.size(ranges))
-            ang = np.append(ang, angle_array)
-            dis = np.append(dis, ranges)
+            if hasattr(self.scan_data_sub, 'scan_data'):
+                msg = self.scan_data
+                ranges = msg.ranges
+                angles_min = msg.angle_min
+                angles_max = msg.angle_max
+                angle_inc = msg.angle_increment
+                angle_array = np.linspace(angles_min, angles_max, np.size(ranges))
+                ang = np.append(ang, angle_array)
+                dis = np.append(dis, ranges)
+            else:
+                print("No Data?")
+                rospy.sleep(.2)
             rospy.sleep(.1)
         return ang, dis
 

@@ -8,13 +8,13 @@ import os, signal
 
 
 class RPLidarClass():
-    def __enter__(self, FILE=["/home/theo/catkin_ws/src/rplidar_ros/launch/rplidar.launch"]):
+    def __enter__(self, file="/home/catkin_ws/src/launch/rplidar_s1.launch"):
         print("launch")
 
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(uuid)
 
-        self.launch = roslaunch.parent.ROSLaunchParent(uuid, FILE)
+        self.launch = roslaunch.parent.ROSLaunchParent(uuid, [file])
         self.launch.start()
         rospy.sleep(3)
         rospy.init_node('rplidarNode', anonymous=True)

@@ -3,6 +3,7 @@ from utils import power_to_motor_payload, reset_STM, servo_angle_to_duty, estima
 import frame
 import numpy as np
 from RP_LIDAR import RPLidar, RPLidarException
+from LidarClass import RPLidarClass
 import time
 import struct
 
@@ -239,7 +240,7 @@ class TurtleDriver:
         self.lidar.stop()
         time.sleep(.5)
 
-    def lidarScan(self, scanLength=5, tries=100):
+    def lidarScan(self, scanLength=5):
         # Inputs:
         #        scanLength: length of time in seconds that the scan will take, default is 5 seconds
         #        tries: number of tries for successful lidar scan, default is 100
@@ -250,24 +251,31 @@ class TurtleDriver:
         # self.zeroLidar(24)  # Need to find pipe Diameter
         # time.sleep(1)
 
-        ang = []
-        dis = []
+        # ang = []
+        # dis = []
+        #
+        # warmup = 5
+        # t1 = time.time()
+        # try:
+        #     print('Recording measurments... Press Crl+C to stop.')
+        #     for data in self.lidar.iter_measures(scan_type='normal', max_buf_meas=False):
+        #         # line = '\t'.join(str(v) for v in measurment)
+        #         if time.time() - t1 >= warmup:
+        #             if data[3] != 0:
+        #                 ang.append(data[2])
+        #                 dis.append(data[3])
+        #         if time.time() - t1 >= scanLength+warmup:
+        #             break
+        # except KeyboardInterrupt:
+        #     print('Stoping.')
+        # self.lidar.stop()
+        #
 
-        warmup = 5
-        t1 = time.time()
-        try:
-            print('Recording measurments... Press Crl+C to stop.')
-            for data in self.lidar.iter_measures(scan_type='normal', max_buf_meas=False):
-                # line = '\t'.join(str(v) for v in measurment)
-                if time.time() - t1 >= warmup:
-                    if data[3] != 0:
-                        ang.append(data[2])
-                        dis.append(data[3])
-                if time.time() - t1 >= scanLength+warmup:
-                    break
-        except KeyboardInterrupt:
-            print('Stoping.')
-        self.lidar.stop()
+        with RPLidarClass as RP:
+            data = RP.get_lidar_data(scanLength)
+        ang = data[0]
+        dis = data[1]
+
         time.sleep(.5)
         return ang, dis
 

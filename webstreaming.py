@@ -69,6 +69,8 @@ def downloadFile ():
 	with TurtleLidarDB() as db:
 		memory_file = db.create_csv()
 	return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
+	# path = 'LidarData.db'
+	# return send_file(path, as_attachment=True)
 
 @app.route("/debug")
 def debug():

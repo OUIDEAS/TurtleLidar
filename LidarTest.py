@@ -102,10 +102,12 @@ if __name__ == '__main__':
     #         enc = (0, 0, 0, 0)
     #         break
 
+    euler = (0, 0, 0)
     gyro = (0, 0, 0)
     acc = (0, 0, 0)
     mag = (0, 0, 0)
     enc = (0, 0, 0, 0)
+    gdata = (euler, gyro, acc, mag)
 
     # Getting image from camera
     vs = VideoStream(src=0).start()

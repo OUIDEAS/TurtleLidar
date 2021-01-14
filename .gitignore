@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
+*.rar
+*.zip
 *.csv
 .idea
 __pycache__/

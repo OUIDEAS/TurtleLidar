@@ -187,6 +187,8 @@
                                 <th>Center X</th>
                                 <th>Center Y</th>
                                 <th>Battery Voltage</th>
+                                <th>Camera</th>
+                                <th>Data Plot</th>
                             </thead>
                             <tbody>
                                 {% for row in displayEntries %}
@@ -196,8 +198,10 @@
                                                 <td>{{item}}</td>
                                             {% else %}
                                                 <td> {{"%.3f"%item}} </td>  
-                                            {% endif %}   
+                                            {% endif %}
                                         {% endfor %}
+                                        <td><a href ="/camerapic/{{ row[0] }}">Camera</a></td>
+                                        <td><a href ="/polarplot/{{ row[0] }}">Data Plot</a></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -210,7 +214,7 @@
                     <nav>
                         <ul class="footer-menu">
                             <li>
-                                <a href="#">
+                                <a href="/">
                                     Home
                                 </a>
                             </li>

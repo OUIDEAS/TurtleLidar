@@ -13,10 +13,12 @@ import imutils
 import time
 import cv2
 import zmq
-# import pretty_errors
+import sys
 from TurtleLidarDB import TurtleLidarDB, DebugPrint
 import json
 import LidarPlot
+import io
+
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
@@ -47,6 +49,7 @@ time.sleep(.1)
 #with TurtleLidarDB() as db:
 #	displayEntries = db.create_debug_table()
 
+print("Web server started...")
 DebugPrint("Web server ready...")
 
 @app.route("/")
@@ -77,6 +80,33 @@ def debug():
 	# return the rendered template
 	DebugPrint("Flask: debug requested")
 	return render_template("debug.html")
+
+@app.route("/camerapic/<int:dataid>")
+def getcamerapic(dataid):
+	print("requested image from data %s" % dataid, file=sys.stdout)
+	with TurtleLidarDB() as db:
+		ldata = db.get_lidar_data(dataid)
+	simage = ldata["image"]
+	return send_file(io.BytesIO(simage),
+					attachment_filename = 'logo.png',
+					mimetype='image/png')
+
+@app.route("/polarplot/<int:dataid>")
+def getdataplotpic(dataid):
+	print("requested plot from data %s" % dataid, file=sys.stderr)
+	image_binary = LidarPlot.testfromDB(dataid)
+	#image_binary = LidarPlot.GiveTestImg()
+	# response = make_response(image_binary)
+	# response.headers.set('Content-Type', 'image/png')
+	# response.headers.set(
+	# 	'Content-Disposition', 'attachment', filename='plot.png')
+	# return response
+	return send_file(image_binary,
+					 attachment_filename='logo.png',
+					 mimetype='image/png')
+	#return 'data %s' % dataid
+
+
 @app.route("/plot")
 def plot():
 	image_binary = LidarPlot.GiveTestImg()

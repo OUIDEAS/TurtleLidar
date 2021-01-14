@@ -7,7 +7,7 @@ import pickle
 import bz2
 import io
 import zipfile
-# import pretty_errors
+import os
 
 class TurtleLidarDB:
     def __enter__(self, db_file="LidarData.db"):

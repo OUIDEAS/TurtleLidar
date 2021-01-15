@@ -60,6 +60,12 @@
                         </a>
                     </li> -->
                     <li>
+                        <a class="nav-link" href="./">
+                            <i class="nc-icon nc-chart-pie-35"></i>
+                            <p>Control</p>
+                        </a>
+                    </li>
+                    <li>
                         <a class="nav-link" href="./sensor-data">
                             <i class="nc-icon nc-chart-pie-36"></i>
                             <p>Sensor Data</p>
@@ -175,7 +181,7 @@
                         </p>
                     </div>
                     <div class="card-body table-full-width table-responsive">
-                        <table class="table table-hover">
+                        <table id="datatable" class="table table-hover">
                             <thead>
                                 <th>ID</th>
                                 <th>Timestamp</th>
@@ -192,7 +198,7 @@
                             </thead>
                             <tbody>
                                 {% for row in displayEntries %}
-                                    <tr>
+                                    <tr id="row{{ row[0] }}">
                                         {% for item in row %}
                                             {% if loop.index < 2 %}
                                                 <td>{{item}}</td>
@@ -200,7 +206,8 @@
                                                 <td> {{"%.3f"%item}} </td>  
                                             {% endif %}
                                         {% endfor %}
-                                        <td><a href ="/camerapic/{{ row[0] }}">Camera</a></td>
+                                        <td><button id="button{{ row[0] }}" onclick="showimage({{ row[0] }},{{ loop.index }})">Show Camera</button>
+                                            <!--<a href ="/camerapic/{{ row[0] }}">Camera</a></td>-->
                                         <td><a href ="/polarplot/{{ row[0] }}">Data Plot</a></td>
                                     </tr>
                                 {% endfor %}
@@ -259,5 +266,33 @@
 <script src="{{ url_for('static', filename="js/light-bootstrap-dashboard.js")}}" type="text/javascript"></script>
 <!-- Light Bootstrap Dashboard DEMO methods, don't include it in your project! -->
 <script src="{{ url_for('static', filename="js/demo.js")}}"></script>
+<script>
+function showimage(dataid, rowid) {
+  var table = document.getElementById("datatable");
 
+  var b4row = document.getElementById("row"+rowid).rowIndex;
+
+  var row = table.insertRow(b4row+1);
+  row.id = "imagerow"+dataid;
+  var cell1 = row.insertCell(0);
+  cell1.id = "dataimage"+dataid;
+  cell1.innerHTML = "<a href =\"/camerapic/"+dataid+"\" target=\"_blank\"><img width=200 src=\"/camerapic/"+dataid+"\"></a>";
+
+    //NEW CELL1 " + dataid + " " + rowid;
+  var but = document.getElementById("button"+rowid);
+
+  but.innerHTML="Hide";
+  but.setAttribute( "onClick","hideimage("+dataid+","+rowid+")");
+}
+function hideimage(dataid,rowid)
+{
+    var table = document.getElementById("datatable");
+    table.deleteRow(dataid+1);
+    //var imagerow = document.getElementById("dataimage"+dataid);
+
+    var but = document.getElementById("button"+rowid);
+    but.innerHTML="Show Camera";
+    but.setAttribute( "onClick","showimage("+dataid+","+rowid+")");
+}
+</script>
 </html>

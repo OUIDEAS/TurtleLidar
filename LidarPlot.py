@@ -3,6 +3,7 @@ import numpy as np
 import io
 from PIL import Image
 from TurtleLidarDB import TurtleLidarDB
+from ellipse import LsqEllipse
 
 def fig2img(fig):
     """Convert a Matplotlib figure to a PIL Image and return it"""
@@ -49,14 +50,45 @@ def testfromDB(dataid):
         y.append(yt)
         alist.append(ang)
         rlist.append(pair[1])
+    coord = np.array(list(zip(x, y)))
     x = np.array(x)
     y = np.array(y)
     alist = np.array(alist)
     rlist = np.array(rlist)
 
-    fig, ax = plt.subplots()
+    # Eclipse Fit
+    reg = LsqEllipse().fit(coord)
+    center, width, height, phi = reg.as_parameters()
+
+    # Center of Fit
+    xc = center[0]
+    yc = center[1]
+    Cr = np.sqrt(xc ** 2 + yc ** 2)
+    Ca = np.arctan2(yc, xc)
+
+    # Eclipse Plot Arrays
+    fitA = []
+    fitR = []
+    angles = np.linspace(0, 360, 300)
+    for a in angles:
+        x1 = width * np.cos(np.deg2rad(a)) + xc
+        y1 = height * np.sin(np.deg2rad(a)) + yc
+        R = np.sqrt(x1 ** 2 + y1 ** 2)
+        an = np.arctan2(y1, x1)
+        fitA.append(an)
+        fitR.append(R)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='polar')
+
+    # fig, ax = plt.subplots()
     #plt.polar(alist,rlist)
-    ax.scatter(x, y)
+    # ax.scatter(x, y)
+
+    ax.scatter(alist, rlist, s=1)
+    ax.scatter(Ca, Cr, s=10)
+    ax.plot(fitA, fitR, c='red')
+    ax.legend(['Ellipse Fit', 'Lidar Data', 'Center of Fit'], loc='upper right')
     ax.grid(True)
     ax.set_aspect('equal', 'box')
     # plt.show()

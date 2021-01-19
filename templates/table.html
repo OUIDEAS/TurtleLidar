@@ -14,7 +14,20 @@
  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.  -->
 <!DOCTYPE html>
 <html lang="en">
-
+<script>
+function timeConverter(UNIX_timestamp){
+  var a = new Date(UNIX_timestamp * 1000);
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var year = a.getFullYear();
+  var month = months[a.getMonth()];
+  var date = a.getDate();
+  var hour = a.getHours();
+  var min = a.getMinutes();
+  var sec = a.getSeconds();
+  var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+  return time;
+}
+</script>
 <head>
     <meta charset="utf-8" />
     <link rel="apple-touch-icon" sizes="76x76" href="{{ url_for('static', filename="img/apple-icon.png")}}">
@@ -177,7 +190,7 @@
                     <div class="card-header ">
                         <h4 class="card-title">Turtle Lidar Data</h4>
                         <p class="card-category">
-                            <a href="./database" download="Data.zip">Download full database file.</a>
+                            <a href="./database" download="RobotLidarData.zip">Download CSV Zip File</a>
                         </p>
                     </div>
                     <div class="card-body table-full-width table-responsive">
@@ -200,16 +213,20 @@
                                 {% for row in displayEntries %}
                                     <tr id="row{{ row[0] }}">
                                         {% for item in row %}
-                                            {% if loop.index < 2 %}
+                                            {% if loop.index == 1 %}
                                                 <td>{{item}}</td>
-                                            {% else %}
+                                            {% elif loop.index == 2 %}
+                                                <td><script>document.write(timeConverter({{item}}));</script></td>
+                                            {% elif loop.index > 2 %}
                                                 <td> {{"%.3f"%item}} </td>  
                                             {% endif %}
                                         {% endfor %}
-                                        <td><button id="button{{ row[0] }}" onclick="showimage({{ row[0] }},{{ loop.index }})">Show Camera</button>
+                                        <td><button id="button_cam{{ row[0] }}" onclick="showimage({{ row[0] }}, 'cam')">Show Camera</button>
                                             <!--<a href ="/camerapic/{{ row[0] }}">Camera</a></td>-->
-                                        <td><a href ="/polarplot/{{ row[0] }}">Data Plot</a></td>
+                                        <td><button id="button_data{{ row[0] }}" onclick="showimage({{ row[0] }}, 'data')">Show Data</button>
+                                        <!--<td><a href ="/polarplot/{{ row[0] }}">Data Plot</a></td>-->
                                     </tr>
+                                    <tr style="display:none;" id="datarow{{ row[0] }}"><td id="tdcam{{ row[0] }}"></td><td id="tddata{{ row[0] }}"></td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -267,32 +284,73 @@
 <!-- Light Bootstrap Dashboard DEMO methods, don't include it in your project! -->
 <script src="{{ url_for('static', filename="js/demo.js")}}"></script>
 <script>
-function showimage(dataid, rowid) {
-  var table = document.getElementById("datatable");
-
-  var b4row = document.getElementById("row"+rowid).rowIndex;
-
-  var row = table.insertRow(b4row+1);
-  row.id = "imagerow"+dataid;
-  var cell1 = row.insertCell(0);
-  cell1.id = "dataimage"+dataid;
-  cell1.innerHTML = "<a href =\"/camerapic/"+dataid+"\" target=\"_blank\"><img width=200 src=\"/camerapic/"+dataid+"\"></a>";
-
-    //NEW CELL1 " + dataid + " " + rowid;
-  var but = document.getElementById("button"+rowid);
-
-  but.innerHTML="Hide";
-  but.setAttribute( "onClick","hideimage("+dataid+","+rowid+")");
-}
-function hideimage(dataid,rowid)
-{
+function showimage(dataid, camordata) {
     var table = document.getElementById("datatable");
-    table.deleteRow(dataid+1);
-    //var imagerow = document.getElementById("dataimage"+dataid);
 
-    var but = document.getElementById("button"+rowid);
-    but.innerHTML="Show Camera";
-    but.setAttribute( "onClick","showimage("+dataid+","+rowid+")");
+
+
+    /*if(!foundtd)
+    {
+    var b4row = document.getElementById("row"+rowid).rowIndex;
+    var row = table.insertRow(b4row+1);
+    row.id = "pic_row"+dataid;
+    }
+    else
+    row = foundtd;*/
+
+    var row = document.getElementById("datarow"+dataid);
+    row.style = "display; table-row";
+
+    if(camordata.localeCompare('cam') == 0) {
+        //var cell1 = row.insertCell(0);
+        var cell1 = document.getElementById("tdcam"+dataid);
+        //cell1.id = "dataimage" + dataid;
+        cell1.innerHTML = "<a href =\"/camerapic/" + dataid + "\" target=\"_blank\"><img width=200 src=\"/camerapic/" + dataid + "\"></a>";
+
+        //NEW CELL1 " + dataid + " " + rowid;
+        var but = document.getElementById("button_cam" + dataid);
+
+        but.innerHTML = "Hide Camera";
+        but.setAttribute("onClick", "hideimage(" + dataid + ", 'cam')");
+    }
+    else {
+        var cell1 = document.getElementById("tddata"+dataid);
+        //cell1.id = "dataimage" + dataid;
+        cell1.innerHTML = "<a href =\"/polarplot/" + dataid + "\" target=\"_blank\"><img width=200 src=\"/polarplot/" + dataid + "\"></a>";
+        var but = document.getElementById("button_data" + dataid);
+        but.innerHTML = "Hide Data";
+        but.setAttribute("onClick", "hideimage(" + dataid + ", 'data')");
+    }
 }
+function hideimage(dataid, camordata) {
+    var cellcam = document.getElementById("tdcam"+dataid);
+    var celldata = document.getElementById("tddata"+dataid);
+    if(camordata.localeCompare('cam') == 0) {
+
+        //cell1.id = "dataimage" + dataid;
+        cellcam.innerHTML = "";
+        var but = document.getElementById("button_cam"+dataid);
+        but.innerHTML="Show Camera";
+        but.setAttribute( "onClick","showimage("+dataid+", 'cam')");
+    }
+    else{
+
+        //cell1.id = "dataimage" + dataid;
+        celldata.innerHTML = "";
+        var but = document.getElementById("button_data"+dataid);
+        but.innerHTML="Show Data";
+        but.setAttribute( "onClick","showimage("+dataid+", 'data')");
+    }
+    var t1 = cellcam.innerHTML.localeCompare("");
+    var t2 = celldata.innerHTML.localeCompare("");
+    if(t1==0 && t2==0)
+    {
+        var row = document.getElementById("datarow"+dataid);
+        row.style = "display: none;";
+    }
+
+}
+
+
 </script>
 </html>

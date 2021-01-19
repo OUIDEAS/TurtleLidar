@@ -62,7 +62,7 @@ def index():
 def sensorData():
 	displayEntries = []
 	with TurtleLidarDB() as db:
-		displayEntries = db.get_table_data()
+		displayEntries = db.get_all_lidar_data()
 
 	# return the rendered template
 	return render_template("table.html", displayEntries=displayEntries)
@@ -70,7 +70,7 @@ def sensorData():
 @app.route('/database')
 def downloadFile ():
 	with TurtleLidarDB() as db:
-		memory_file = db.create_csv()
+		memory_file = db.create_csv_zip_bytes()
 	return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
 	# path = 'LidarData.db'
 	# return send_file(path, as_attachment=True)
@@ -85,7 +85,7 @@ def debug():
 def getcamerapic(dataid):
 	print("requested image from data %s" % dataid, file=sys.stdout)
 	with TurtleLidarDB() as db:
-		ldata = db.get_lidar_data(dataid)
+		ldata = db.get_lidar_data_byID(dataid)
 	simage = ldata["image"]
 	return send_file(io.BytesIO(simage),
 					attachment_filename = 'logo.png',
@@ -94,14 +94,28 @@ def getcamerapic(dataid):
 @app.route("/polarplot/<int:dataid>")
 def getdataplotpic(dataid):
 	print("requested plot from data %s" % dataid, file=sys.stderr)
-	image_binary = LidarPlot.testfromDB(dataid)
+	pimage = None
+
+	with TurtleLidarDB() as db:
+		pimage = db.get_polarplot_by_lidarID(dataid)
+
+	if(not pimage):
+		data = None
+		with TurtleLidarDB() as db:
+			data = db.get_lidar_data_byID(dataid)
+		if(not data):
+			return "error getting data"
+		pimage = LidarPlot.GenerateDataPolarPlotByData(data)
+		if(pimage):
+			with TurtleLidarDB() as db:
+				db.insert_polarplot(pimage, dataid)
 	#image_binary = LidarPlot.GiveTestImg()
 	# response = make_response(image_binary)
 	# response.headers.set('Content-Type', 'image/png')
 	# response.headers.set(
 	# 	'Content-Disposition', 'attachment', filename='plot.png')
 	# return response
-	return send_file(image_binary,
+	return send_file(pimage,
 					 attachment_filename='logo.png',
 					 mimetype='image/png')
 	#return 'data %s' % dataid
@@ -118,6 +132,7 @@ def plot():
 	return send_file(image_binary,
 					 attachment_filename='logo.png',
 					 mimetype='image/png')
+
 def video_stream(frameCount):
 	# grab global references to the video stream, output frame, and
 	# lock variables

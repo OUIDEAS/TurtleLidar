@@ -42,6 +42,7 @@ td.initServo()
 
 ser = ReadSerialTurtle()
 
+#todo: not needed because the class init does this?
 with TurtleLidarDB() as db:
     db.create_lidar_table()
     db.create_LidarStatus_table()
@@ -108,7 +109,7 @@ try:
 
                     batVolt = td.battery_status()
                     with TurtleLidarDB() as db:
-                        db.create_lidar_data_input(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
+                        db.insert_lidar_data(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                                    LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
                                                    LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], data[0],
                                                    pkt[1], batVolt)

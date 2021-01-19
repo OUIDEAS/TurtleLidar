@@ -1,8 +1,9 @@
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import io
 from PIL import Image
-from TurtleLidarDB import TurtleLidarDB
 from ellipse import LsqEllipse
 
 def fig2img(fig):
@@ -31,10 +32,8 @@ def GiveTestImg():
     buf.seek(0)
     return buf
 
-def testfromDB(dataid):
-    data = []
-    with TurtleLidarDB() as db:
-        data = db.get_lidar_data(dataid)
+def GenerateDataPolarPlotByData(data):
+
 
     #angle, dist pairs
     ldata = data['Lidar']

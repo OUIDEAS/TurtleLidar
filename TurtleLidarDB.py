@@ -259,14 +259,14 @@ class TurtleLidarDB:
                 self.c.execute(sql, data)
                 self.conn.commit()
             else:
-                self.create_lidar_status_input("Ready")
+                self.update_lidar_status("Ready")
         except Error as e:
             self.insert_debug_msg(e)
             return -1
         return 0
 
     def update_lidar_status(self, msg):
-        self.insert_debug_msg("create_lidar_status_input")
+        self.insert_debug_msg("update_lidar_status")
 
         sql = ''' UPDATE LidarStatus
                           SET timestamp = ?,
@@ -493,7 +493,7 @@ class TurtleLidarDB:
 
         ImageData = {}
         for i in range(k[0]):
-            data = self.get_lidar_data(i + 1)
+            data = self.get_lidar_data_byID(i + 1)
             dt = datetime.fromtimestamp(data['Time'])
             date_time = dt.strftime("%m-%d-%Y_%H.%M.%S")
 
@@ -534,7 +534,7 @@ def DebugPrint(msg):
 def printLidarStatus(msg):
     print("STATUS: ")
     with TurtleLidarDB() as DB:
-        DB.create_lidar_status_input(msg)
+        DB.update_lidar_status(msg)
 
 
 if __name__ == "__main__":
@@ -580,10 +580,14 @@ if __name__ == "__main__":
     #     # db.create_LidarStatus_table()
     #     X = db.get_lidar_status()
     #     print(X)
-    #     db.create_lidar_status_input("Test...")
+    #     db.update_lidar_status("Test...")
     #     X = db.get_lidar_status()
     #     print(X)
     #     # db.create_csv_zip()
     #     # db.save_images()
     #     # X = db.get_table_data()
     #     # print(X)
+
+    with TurtleLidarDB() as db:
+        data = db.get_lidar_data_byID(1)
+        print(data)

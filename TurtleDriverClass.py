@@ -13,7 +13,7 @@ class TurtleException(Exception):
 
 
 class TurtleDriver:
-    def __init__(self, SerialPortName="/dev/serial0", LidarPortName='/dev/ttyUSB1',
+    def __init__(self, SerialPortName="/dev/ttyAMA0",
                  min_ang=-90, max_ang=90, min_duty=2400, max_duty=4800):
 
         # Turtle Shield
@@ -35,15 +35,9 @@ class TurtleDriver:
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
 
-        self.lidar = RPLidar(LidarPortName, 256000)  # Baud rate must be 256000 for RPlidar S1
-
     def initServo(self):
         self.servo_angle = 0
         self.set_servo(3, self.servo_angle - 20)
-
-    def shutdownLidar(self):
-        self.lidar.stop_motor()
-        self.lidar.disconnect()
 
     def set_motors(self, msg):
         if len(msg) < 4:
@@ -248,29 +242,6 @@ class TurtleDriver:
         #        ang: list of angles that lidar scanned at
         #        dis: list of distances that lidar scanned at
 
-        # self.zeroLidar(24)  # Need to find pipe Diameter
-        # time.sleep(1)
-
-        # ang = []
-        # dis = []
-        #
-        # warmup = 5
-        # t1 = time.time()
-        # try:
-        #     print('Recording measurments... Press Crl+C to stop.')
-        #     for data in self.lidar.iter_measures(scan_type='normal', max_buf_meas=False):
-        #         # line = '\t'.join(str(v) for v in measurment)
-        #         if time.time() - t1 >= warmup:
-        #             if data[3] != 0:
-        #                 ang.append(data[2])
-        #                 dis.append(data[3])
-        #         if time.time() - t1 >= scanLength+warmup:
-        #             break
-        # except KeyboardInterrupt:
-        #     print('Stoping.')
-        # self.lidar.stop()
-        #
-
         with RPLidarClass as RP:
             data = RP.get_lidar_data(scanLength)
         ang = data[0]
@@ -284,9 +255,10 @@ if __name__ == "__main__":
 
     print("Turtle Rover Motor Test")
     td = TurtleDriver()
-    print(td.battery_status())
-    time.sleep(5)
-    td.zeroLidar()
+    print(td.publish_firmware_ver())
     time.sleep(1)
-    td.shutdownLidar()
+    print(td.battery_status())
+    # time.sleep(5)
+    # td.lidarScan()
+    time.sleep(1)
     print("done")

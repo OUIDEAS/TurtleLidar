@@ -242,7 +242,7 @@ class TurtleDriver:
         #        ang: list of angles that lidar scanned at
         #        dis: list of distances that lidar scanned at
 
-        with RPLidarClass as RP:
+        with RPLidarClass() as RP:
             data = RP.get_lidar_data(scanLength)
         ang = data[0]
         dis = data[1]

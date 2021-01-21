@@ -14,7 +14,7 @@ import time
 import cv2
 import zmq
 import sys
-from TurtleLidarDB import TurtleLidarDB, DebugPrint
+from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint
 import json
 import LidarPlot
 import io
@@ -187,6 +187,15 @@ def generate():
 
 @app.route("/scan_status")
 def scan_status():
+	# printLidarStatus()
+	# printLidarStatus("hello0")
+	# printLidarStatus(msg="hello1")
+	# printLidarStatus(battery_voltage=1200.25)
+	# printLidarStatus(msg="hello2", battery_voltage=1200.25)
+	# printLidarStatus("hello4", battery_voltage=1200.25)
+	# printLidarStatus("hello5", 1200.25)
+	# printLidarStatus(64) #do not use, will update string message!
+
 	message = "Error with LidarStatus database"
 	with TurtleLidarDB() as db:
 		message, fbattery_voltage = db.get_lidar_status()

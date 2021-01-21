@@ -268,27 +268,30 @@ class TurtleLidarDB:
 
 
 
-    def update_lidar_status(self, msg, battery_voltage=-1):
+    def update_lidar_status(self, msg=None, battery_voltage=-1):
         self.insert_debug_msg("update_lidar_status")
-        sql_bat = ""
-        data = (time.time(), msg, 1)
-        if(battery_voltage >= 0):
-            sql_bat = "battery_voltage = ?,"
+
+        sql_xtra = ""
+        if(battery_voltage >= 0 and msg):
+            sql_xtra = "status = ?, battery_voltage = ?"
             data = (time.time(), msg, battery_voltage, 1)
-
-        sql = """UPDATE LidarStatus
-                          SET timestamp = ?,
-                              status = ?, 
-                              +sql_bat+
-                          WHERE id = ?"""
-
-        if isinstance(msg, str):
-            self.c.execute(sql, data)
-            self.conn.commit()
+        elif(battery_voltage < 0 and msg):
+            sql_xtra = "status = ?"
+            data = (time.time(), msg, 1)
+        elif(battery_voltage >=0 and not msg):
+            sql_xtra = "battery_voltage = ?"
+            data = (time.time(), battery_voltage, 1)
         else:
-            #todo wha is this? Insert an error if the 1st try fails?
-            data = (time.time(), "Error", 1)
-            self.c.execute(sql, data)
+            #why would you do this?
+            return None
+
+        #sql = "UPDATE LidarStatus SET timestamp = 42, status = 'hello-', battery_voltage = 4 WHERE id = 1;"
+
+        sql = "UPDATE LidarStatus SET timestamp = ?, " + sql_xtra + " WHERE id = ?"
+        self.c.execute(sql, data)
+        #self.c.execute(sql, data)
+        #self.conn.commit()
+
         return self.c.lastrowid
 
     def check_lidar_status_table_exists(self):
@@ -543,11 +546,10 @@ def DebugPrintStore(msg,bStore):
 def DebugPrint(msg):
     DebugPrintStore(msg, True)
 
-def printLidarStatus(msg, batteryvotlage = -1):
-
+def printLidarStatus(msg=None, battery_voltage = -1):
     print("STATUS: ")
     with TurtleLidarDB() as DB:
-        DB.update_lidar_status(msg, batteryvotlage)
+        DB.update_lidar_status(msg, battery_voltage)
 
 if __name__ == "__main__":
 

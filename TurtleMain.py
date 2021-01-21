@@ -25,15 +25,13 @@ poller = zmq.Poller()
 poller.register(socket, zmq.POLLIN)
 
 t = time.time()
+tbat = time.time()
 tlast = time.time()
 
 motorBuffer = []
 n = 10  # length of buffer
-try:
-    td = TurtleDriver()
-except:
-    td = TurtleDriver(SerialPortName="/dev/serial0", LidarPortName='/dev/ttyUSB0')
-    DebugPrint("TurtleDriver(SerialPortName=")
+
+td = TurtleDriver()
 
 fv = td.publish_firmware_ver()
 DebugPrint("Turtle Shield Firmware Version:" + str(fv))
@@ -118,11 +116,15 @@ try:
                     DebugPrint("Scan Finished")
             if topic == "shutdown":
                 td.stopTurtle()
-                td.shutdownLidar()
                 ser.stopRead()
                 time.sleep(1)
                 raise SystemExit
-
+        #Battery
+        if time.time() - tbat >= 30:
+            batVolt = td.battery_status()
+            printLidarStatus("Ready", batVolt)
+        
+        # Motors
         if time.time()-t >= .05:
             # print("Time Elapsed:", time.time()-t)
             t = time.time()
@@ -147,13 +149,11 @@ try:
 except Exception as e:
     # print(e)
     DebugPrint("Turtle Main exception " + str(e))
-    printLidarStatus("Exception Occurred")
+    printLidarStatus("Exception Occurred", 0)
     td.stopTurtle()
-    td.shutdownLidar()
     ser.stopRead()
 except KeyboardInterrupt:
     DebugPrint("TurtleMain Keyboard Interrupt")
-    printLidarStatus("Keyboard Interrupt")
+    printLidarStatus("Keyboard Interrupt", 0)
     td.stopTurtle()
-    td.shutdownLidar()
     ser.stopRead()

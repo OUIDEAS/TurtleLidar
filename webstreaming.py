@@ -189,9 +189,12 @@ def generate():
 def scan_status():
 	message = "Error with LidarStatus database"
 	with TurtleLidarDB() as db:
-		message = str(db.get_lidar_status())
+		message, fbattery_voltage = db.get_lidar_status()
 	#print(message)
-	return message, 200
+	return jsonify(
+		status_text=message,
+		battery_voltage=fbattery_voltage,
+	)
 
 @app.route("/debug_feed", methods=['GET', 'POST'])
 def debug_feed():

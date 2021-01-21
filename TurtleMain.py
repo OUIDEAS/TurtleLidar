@@ -75,18 +75,18 @@ try:
                     tlast = time.time()
             if topic == "scan":
                 if pkt[0] != False:
-                    printLidarStatus("Starting Scan")
+                    printLidarStatus("Starting Scan",  td.battery_status())
                     DebugPrint("Beginning Scan")
                     td.stopTurtle()
                     time.sleep(1)
                     ScanTime = time.time()
-                    printLidarStatus("Beginning Zero")
+                    printLidarStatus("Beginning Zero",  td.battery_status())
                     DebugPrint("Beginning Zero")
                     # td.zeroLidar()
-                    printLidarStatus("Lidar Zeroed...Scanning...")
+                    printLidarStatus("Lidar Zeroed...Scanning...",  td.battery_status())
                     DebugPrint("Scanning")
                     scan = td.lidarScan()
-                    printLidarStatus("Processing Data")
+                    printLidarStatus("Processing Data",  td.battery_status())
 
                     # Adjust data for circle center
                     pipe_scan = find_center(scan)
@@ -114,7 +114,7 @@ try:
                                                    LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], data[0],
                                                    pkt[1], batVolt)
 
-                    printLidarStatus("Scan Finished...Ready")
+                    printLidarStatus("Scan Finished...Ready", batVolt)
                     DebugPrint("Scan Finished")
             if topic == "shutdown":
                 td.stopTurtle()

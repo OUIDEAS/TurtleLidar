@@ -244,7 +244,8 @@ class TurtleLidarDB:
         create_table_sql = """CREATE TABLE IF NOT EXISTS LidarStatus (
                                             id integer PRIMARY KEY,
                                             timestamp REAL NOT NULL,
-                                            status TEXT
+                                            status TEXT,
+                                            battery_voltage REAL
                                         );"""
 
         try:
@@ -253,27 +254,35 @@ class TurtleLidarDB:
             self.c.execute('''SELECT id FROM LidarStatus''')
             rows = self.c.fetchall()
             if not rows:
-                sql = ''' INSERT INTO LidarStatus (timestamp, status)
+                sql = ''' INSERT INTO LidarStatus (timestamp, status. battery_voltage)
                                       VALUES(?,?) '''
-                data = (time.time(), "Ready")
+                data = (time.time(), "Loading...", 0.0)
                 self.c.execute(sql, data)
                 self.conn.commit()
             else:
-                self.update_lidar_status("Ready")
+                self.update_lidar_status("Loading...")
         except Error as e:
             self.insert_debug_msg(e)
             return -1
         return 0
 
-    def update_lidar_status(self, msg):
-        self.insert_debug_msg("update_lidar_status")
 
-        sql = ''' UPDATE LidarStatus
+
+    def update_lidar_status(self, msg, battery_voltage=-1):
+        self.insert_debug_msg("update_lidar_status")
+        sql_bat = ""
+        data = (time.time(), msg, 1)
+        if(battery_voltage >= 0):
+            sql_bat = "battery_voltage = ?,"
+            data = (time.time(), msg, battery_voltage, 1)
+
+        sql = """UPDATE LidarStatus
                           SET timestamp = ?,
-                              status = ?
-                          WHERE id = ?'''
+                              status = ?, 
+                              +sql_bat+
+                          WHERE id = ?"""
+
         if isinstance(msg, str):
-            data = (time.time(), msg, 1)
             self.c.execute(sql, data)
             self.conn.commit()
         else:
@@ -300,14 +309,17 @@ class TurtleLidarDB:
 
         message = ""
         try:
-            self.c.execute('''SELECT id,timestamp, status FROM LidarStatus''')
+            self.c.execute('''SELECT id,timestamp,status,battery_voltage FROM LidarStatus''')
             rows = self.c.fetchall()
             message = rows[0][2]
+            battery = rows[0][3]
+            if(not battery):
+                battery = -1
             #print(rows)
         except Error as e:
             self.insert_debug_msg(e)
 
-        return message
+        return message, battery
 
     def insert_lidar_data(self, Time, odo, lidar, avgR, stdR, minR, maxR, xCenter, yCenter, gyro, image, batVolt):
         self.insert_debug_msg("create_lidar_data_input")
@@ -531,11 +543,11 @@ def DebugPrintStore(msg,bStore):
 def DebugPrint(msg):
     DebugPrintStore(msg, True)
 
-def printLidarStatus(msg):
+def printLidarStatus(msg, batteryvotlage = -1):
+
     print("STATUS: ")
     with TurtleLidarDB() as DB:
-        DB.update_lidar_status(msg)
-
+        DB.update_lidar_status(msg, batteryvotlage)
 
 if __name__ == "__main__":
 

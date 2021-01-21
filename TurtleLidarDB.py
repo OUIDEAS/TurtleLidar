@@ -314,8 +314,8 @@ class TurtleLidarDB:
         try:
             self.c.execute('''SELECT id,timestamp,status,battery_voltage FROM LidarStatus''')
             rows = self.c.fetchall()
-            message = rows[0][1]
-            battery = rows[0][2]
+            message = rows[0][2]
+            battery = rows[0][3]
             if(not battery):
                 battery = -1
             #print(rows)

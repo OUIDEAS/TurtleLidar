@@ -119,11 +119,14 @@ try:
                 ser.stopRead()
                 time.sleep(1)
                 raise SystemExit
+
         #Battery
         if time.time() - tbat >= 30:
             batVolt = td.battery_status()
-            printLidarStatus("Ready", batVolt)
-        
+            printLidarStatus(battery_voltage=batVolt)
+            # with TurtleLidarDB() as DB:
+            #     DB.update_lidar_status(battery_voltage=batVolt)
+
         # Motors
         if time.time()-t >= .05:
             # print("Time Elapsed:", time.time()-t)
@@ -136,24 +139,18 @@ try:
                     td.drive(float(motorBuffer[0][0]), float(motorBuffer[0][1]))
                     motorBuffer.pop(0)
             else:
-                # mbuff = []
-                # for i in range(len(motorBuffer)):
-                #     a = str(round(float(motorBuffer[i][0]),2))
-                #     b = str(round(float(motorBuffer[i][1]),2))
-                #     mbuff.append([a, b])
-                # print("Buffer:", mbuff)
-
                 # print(motorBuffer)
                 td.drive(float(motorBuffer[0][0]), float(motorBuffer[0][1]))
                 motorBuffer.pop(0)
+
 except Exception as e:
     # print(e)
     DebugPrint("Turtle Main exception " + str(e))
-    printLidarStatus("Exception Occurred", 0)
+    printLidarStatus("Exception Occurred")
     td.stopTurtle()
     ser.stopRead()
 except KeyboardInterrupt:
     DebugPrint("TurtleMain Keyboard Interrupt")
-    printLidarStatus("Keyboard Interrupt", 0)
+    printLidarStatus("Keyboard Interrupt")
     td.stopTurtle()
     ser.stopRead()

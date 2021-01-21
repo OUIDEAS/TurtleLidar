@@ -254,8 +254,8 @@ class TurtleLidarDB:
             self.c.execute('''SELECT id FROM LidarStatus''')
             rows = self.c.fetchall()
             if not rows:
-                sql = ''' INSERT INTO LidarStatus (timestamp, status. battery_voltage)
-                                      VALUES(?,?) '''
+                sql = ''' INSERT INTO LidarStatus (timestamp, status, battery_voltage)
+                                      VALUES(?,?,?) '''
                 data = (time.time(), "Loading...", 0.0)
                 self.c.execute(sql, data)
                 self.conn.commit()

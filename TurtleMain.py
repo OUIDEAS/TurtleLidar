@@ -59,7 +59,7 @@ try:
             try:
                 topic = socket.recv_string()
                 pkt = socket.recv_pyobj()
-                print(f"Topic: {topic} => {pkt}")
+                #print(f"Topic: {topic} => {pkt}")
             except Exception:
                 topic = "Bad Input"
 
@@ -73,18 +73,25 @@ try:
                     tlast = time.time()
             if topic == "scan":
                 if pkt[0] != False:
-                    printLidarStatus("Starting Scan",  td.battery_status())
+                    try:
+                        batVolt = td.battery_status()
+                        printLidarStatus(battery_voltage=batVolt)
+                    except Exception as e:
+                        DebugPrint("Exception when getting battery status: " + str(e))
+                        batVolt = 0
+
+                    printLidarStatus("Starting Scan",  batVolt)
                     DebugPrint("Beginning Scan")
                     td.stopTurtle()
                     time.sleep(1)
                     ScanTime = time.time()
-                    printLidarStatus("Beginning Zero",  td.battery_status())
+                    printLidarStatus("Beginning Zero")
                     DebugPrint("Beginning Zero")
                     # td.zeroLidar()
-                    printLidarStatus("Lidar Zeroed...Scanning...",  td.battery_status())
+                    printLidarStatus("Lidar Zeroed...Scanning...")
                     DebugPrint("Scanning")
                     scan = td.lidarScan()
-                    printLidarStatus("Processing Data",  td.battery_status())
+                    printLidarStatus("Processing Data")
 
                     # Adjust data for circle center
                     pipe_scan = find_center(scan)
@@ -105,7 +112,7 @@ try:
                         "H/W": pipe_scan[3]/pipe_scan[2]
                     }
 
-                    batVolt = td.battery_status()
+
                     with TurtleLidarDB() as db:
                         db.insert_lidar_data(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                                    LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
@@ -122,8 +129,12 @@ try:
 
         #Battery
         if time.time() - tbat >= 30:
-            batVolt = td.battery_status()
-            printLidarStatus(battery_voltage=batVolt)
+            try:
+                batVolt = td.battery_status()
+                printLidarStatus(battery_voltage=batVolt)
+            except Exception as e:
+                DebugPrint("Exception when getting battery status: " + str(e))
+
             # with TurtleLidarDB() as DB:
             #     DB.update_lidar_status(battery_voltage=batVolt)
 

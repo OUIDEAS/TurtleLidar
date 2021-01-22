@@ -52,6 +52,8 @@ for i in range(n):
     print("Stopping motors...")
     motorBuffer.append([0, 0])
 
+printLidarStatus("Turtle Ready")
+
 try:
     while True:
         evts = dict(poller.poll(timeout=1))
@@ -124,6 +126,7 @@ try:
                         DebugPrint("Scan Finished")
                     else:
                         printLidarStatus("Scan Failed")
+
             if topic == "shutdown":
                 td.stopTurtle()
                 ser.stopRead()
@@ -140,8 +143,6 @@ try:
 
             tbat = time.time()
 
-            # with TurtleLidarDB() as DB:
-            #     DB.update_lidar_status(battery_voltage=batVolt)
 
         # Motors
         if time.time() - t >= .05:
@@ -166,7 +167,9 @@ except Exception as e:
     td.stopTurtle()
     ser.stopRead()
 except KeyboardInterrupt:
-    DebugPrint("TurtleMain Keyboard Interrupt")
+    DebugPrint("Turtle Main Keyboard Interrupt")
     printLidarStatus("Keyboard Interrupt")
     td.stopTurtle()
     ser.stopRead()
+finally:
+    td.RP.shutdownLidar()

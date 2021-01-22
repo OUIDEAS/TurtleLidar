@@ -311,6 +311,7 @@ class TurtleLidarDB:
         #self.insert_debug_msg("get_lidar_status")
 
         message = ""
+        battery = -1
         try:
             self.c.execute('''SELECT id,timestamp,status,battery_voltage FROM LidarStatus''')
             rows = self.c.fetchall()

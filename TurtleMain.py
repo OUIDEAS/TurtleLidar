@@ -128,12 +128,14 @@ try:
                 raise SystemExit
 
         #Battery
-        if time.time() - tbat >= 30:
+        if time.time() - tbat >= 10:
             try:
                 batVolt = td.battery_status()
                 printLidarStatus(battery_voltage=batVolt)
             except Exception as e:
                 DebugPrint("Exception when getting battery status: " + str(e))
+
+            tbat = time.time()
 
             # with TurtleLidarDB() as DB:
             #     DB.update_lidar_status(battery_voltage=batVolt)

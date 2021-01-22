@@ -3,7 +3,7 @@ from utils import power_to_motor_payload, reset_STM, servo_angle_to_duty, estima
 import frame
 import numpy as np
 from RP_LIDAR import RPLidar, RPLidarException
-from LidarClass import RPLidarClass
+from LidarClass import RPLidarClass,RPLidarClass2
 import time
 import struct
 
@@ -34,6 +34,8 @@ class TurtleDriver:
         # Lidar
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
+
+        self.RP = RPLidarClass2()
 
     def initServo(self):
         self.servo_angle = 0
@@ -242,8 +244,10 @@ class TurtleDriver:
         #        ang: list of angles that lidar scanned at
         #        dis: list of distances that lidar scanned at
 
-        with RPLidarClass() as RP:
-            data = RP.get_lidar_data(scanLength)
+        # with RPLidarClass() as RP:
+        #     data = RP.get_lidar_data(scanLength)
+
+        data = self.RP.get_lidar_data(scanLength)
         ang = data[0]
         dis = data[1]
 

@@ -5,6 +5,7 @@ from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint
 import numpy as np
 from miscFunctions import find_center, ReadSerialTurtle
 import utils
+from LidarClass import RPLidarClass
 
 # import pretty_errors
 
@@ -87,14 +88,21 @@ try:
                     DebugPrint("Beginning Scan")
                     td.stopTurtle()
                     time.sleep(1)
+                    RP = RPLidarClass()
+                    qret = RP.startLIDAR()
+                    DebugPrint("Lidar start + "+str(qret))
+
                     ScanTime = time.time()
                     printLidarStatus("Beginning Zero")
                     DebugPrint("Beginning Zero")
                     # td.zeroLidar()
                     printLidarStatus("Lidar Zeroed...Scanning...")
                     DebugPrint("Scanning")
-                    scan = td.lidarScan()
+                    scan = RP.get_lidar_data()
+                    qret = RP.shutdownLIDAR()
+                    DebugPrint("Shutting down LIDAR + "+str(qret))
                     printLidarStatus("Processing Data")
+
 
                     if len(scan[0]) > 1:
                         # Adjust data for circle center

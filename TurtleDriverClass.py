@@ -2,7 +2,7 @@ from serial_comm import SerialComm
 from utils import power_to_motor_payload, reset_STM, servo_angle_to_duty, estimateError
 import frame
 import numpy as np
-from RP_LIDAR import RPLidar, RPLidarException
+from LidarClass import RPLidarClass
 import time
 import struct
 
@@ -203,7 +203,7 @@ class TurtleDriver:
                         self.steplidar(3, FinalStep*2)
                         print("Lidar Zeroed")
                         break
-        except RPLidarException as e:
+        except Exception as e:
             print("Stopping due to error:", e)
         except KeyboardInterrupt:
             print('Stopping due to keyboard interrupt')
@@ -211,45 +211,22 @@ class TurtleDriver:
         self.lidar.stop()
         time.sleep(.5)
 
-    def lidarScanWrite(self, path='lidarScan.txt', scanLength=5, tries=100):
-        outfile = open(path, 'w')
-        t1 = time.time()
-        warmup = 5
+    def lidarScan(self, scanLength=5):
+        # Inputs:
+        #        scanLength: length of time in seconds that the scan will take, default is 5 seconds
+        #        tries: number of tries for successful lidar scan, default is 100
+        # Outputs:
+        #        ang: list of angles that lidar scanned at
+        #        dis: list of distances that lidar scanned at
 
-        try:
-            for measurment in self.lidar.iter_measures():
-                if time.time() - t1 >= warmup:
-                    if measurment[3] != 0:
-                        line = '\t'.join(str(v) for v in measurment)
-                        outfile.write(line + '\n')
-                if time.time() - t1 > scanLength:
-                    break
-        except RPLidarException as e:
-            print("Stopping due to:", e)
-        except KeyboardInterrupt:
-            print("Keyboard Interrupt detected")
+        with RPLidarClass() as RP:
+            data = RP.get_lidar_data(scanLength)
 
-        outfile.close()
-        self.lidar.stop()
+        ang = data[0]
+        dis = data[1]
+
         time.sleep(.5)
-
-    # def lidarScan(self, scanLength=5):
-    #     # Inputs:
-    #     #        scanLength: length of time in seconds that the scan will take, default is 5 seconds
-    #     #        tries: number of tries for successful lidar scan, default is 100
-    #     # Outputs:
-    #     #        ang: list of angles that lidar scanned at
-    #     #        dis: list of distances that lidar scanned at
-    #
-    #     # with RPLidarClass() as RP:
-    #     #     data = RP.get_lidar_data(scanLength)
-    #
-    #     data = self.RP.get_lidar_data(scanLength)
-    #     ang = data[0]
-    #     dis = data[1]
-    #
-    #     time.sleep(.5)
-    #     return ang, dis
+        return ang, dis
 
 
 if __name__ == "__main__":

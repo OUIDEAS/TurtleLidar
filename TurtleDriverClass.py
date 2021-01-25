@@ -174,8 +174,8 @@ class TurtleDriver:
 
         i = 0
         try:
-            while True:
-                with RPLidarClass() as RP:
+            with RPLidarClass() as RP:
+                while True:
                     scan = RP.get_lidar_data(5)
                     for j in range(len(scan[0])):
                         theta = scan[0][j]

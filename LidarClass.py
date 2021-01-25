@@ -8,7 +8,7 @@ import roslaunch
 
 
 class RPLidarClass:
-    def startLIDAR(self, file="/home/catkin_ws/src/launch/rplidar_s1.launch"):
+    def __enter__(self, file="/home/catkin_ws/src/launch/rplidar_s1.launch"):
         print("launch")
 
         self.scan_data = None
@@ -25,9 +25,8 @@ class RPLidarClass:
         rospy.init_node('rplidarNode', anonymous=True)
         self.scan_data_sub = rospy.Subscriber('scan', LaserScan, self.get_scan)
         rospy.sleep(1)
-        return self.launch.pm.is_shutdown
+        return self
 
-    #what is this, a topic?
     def get_scan(self, LaserScan):
         self.scan_data = LaserScan
 
@@ -54,30 +53,31 @@ class RPLidarClass:
 
         return np.rad2deg(ang), dis*1000
 
-    def shutdownLIDAR(self):
+    def __exit__(self, ext_type, exc_value, traceback):
         print("Shutdown")
-        qtime = time.time() + 2
+        time.sleep(5)
+        self.scan_data_sub.unregister()
+        self.launch.shutdown()
+        time.sleep(5)
+        qtime = time.time() + 5
         while True:
-            if (self.launch.pm.is_shutdown):
+            if self.launch.pm.is_shutdown:
                 print('graceful ROS exit')
-                return 0
-            if (time.time() > qtime):
+                break
+            if time.time() > qtime:
                 print('timeout waiting for ROS to quit')
-                return -1
+                break
             time.sleep(0.1)
-        return 1
 
 
 if __name__ == "__main__":
-    from matplotlib import pyplot as plt
+    # from matplotlib import pyplot as plt
 
     with RPLidarClass() as RP:
-        RP.startLIDAR()
         print("getting data")
         X = RP.get_lidar_data(5)
         print(X)
         print("end data")
-        RP.shutdownLIDAR()
         # ax = plt.subplot(111, projection='polar')
         # ax.plot(X[0], X[1])
         # plt.pause(0.5)

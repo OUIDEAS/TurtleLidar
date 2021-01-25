@@ -176,7 +176,7 @@ class TurtleDriver:
         t1 = time.time()
         try:
             while True:
-                with RPLidarClass as RP:
+                with RPLidarClass() as RP:
                     scan = RP.get_lidar_data(5)
 
                     theta = scan[0] * self.DEG2RAD

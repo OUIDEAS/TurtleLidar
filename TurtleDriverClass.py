@@ -175,40 +175,41 @@ class TurtleDriver:
         i = 0
         t1 = time.time()
         try:
-            for scan in self.lidar.iter_measures(max_buf_meas=0):
-                if scan[3] != 0:
-                    theta = scan[2] * self.DEG2RAD
-                    R = scan[3] * self.MM2INCH
+            while True:
+                with RPLidarClass as RP:
+                    scan = RP.get_lidar_data(5)
+
+                    theta = scan[0] * self.DEG2RAD
+                    R = scan[1] * self.MM2INCH
                     X_lidar = R * np.cos(theta)
                     Y_lidar = R * np.sin(theta)
                     coord = np.vstack((coord, [X_lidar, Y_lidar]))
 
-                if time.time() - t1 > 5:
-                    if i == 0:
-                        coord = np.array([0, 0])
-                        i += 1
-                        t1 = time.time()
-                    elif i < 11:
-                        Error = estimateError(coord)
-                        print(Error)
-                        coord = np.array([0, 0])
-                        PrevError = np.append(PrevError, Error)
-                        self.steplidar(3, 2)
-                        i += 1
-                        t1 = time.time()
-                    else:
-                        minVal = np.argmin(abs(PrevError))
-                        FinalStep = minVal - i + 1
-                        print(FinalStep)
-                        self.steplidar(3, FinalStep*2)
-                        print("Lidar Zeroed")
-                        break
+                    if time.time() - t1 > 5:
+                        if i == 0:
+                            coord = np.array([0, 0])
+                            i += 1
+                            t1 = time.time()
+                        elif i < 11:
+                            Error = estimateError(coord)
+                            print(Error)
+                            coord = np.array([0, 0])
+                            PrevError = np.append(PrevError, Error)
+                            self.steplidar(3, 2)
+                            i += 1
+                            t1 = time.time()
+                        else:
+                            minVal = np.argmin(abs(PrevError))
+                            FinalStep = minVal - i + 1
+                            print(FinalStep)
+                            self.steplidar(3, FinalStep*2)
+                            print("Lidar Zeroed")
+                            break
         except Exception as e:
             print("Stopping due to error:", e)
         except KeyboardInterrupt:
             print('Stopping due to keyboard interrupt')
 
-        self.lidar.stop()
         time.sleep(.5)
 
     def lidarScan(self, scanLength=5):
@@ -237,6 +238,6 @@ if __name__ == "__main__":
     time.sleep(1)
     print(td.battery_status())
     # time.sleep(5)
-    # td.lidarScan()
+    td.zeroLidar()
     time.sleep(1)
     print("done")

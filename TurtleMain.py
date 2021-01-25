@@ -171,5 +171,3 @@ except KeyboardInterrupt:
     printLidarStatus("Keyboard Interrupt")
     td.stopTurtle()
     ser.stopRead()
-finally:
-    td.RP.shutdownLidar()

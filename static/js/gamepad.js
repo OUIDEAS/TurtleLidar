@@ -1,4 +1,8 @@
 function gamepadLoop(controller, readToggle, last_press, last_pressB) { // reference: https://github.com/luser/gamepadtest/blob/master/gamepadtest.js
+    var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+    controller = gamepads[0];
+    //console.log(controller.axes[0]);
+
     var val = controller.buttons[1];
     var pressed = val == 1.0;
     if (typeof(val) == "object") {
@@ -114,7 +118,7 @@ function gamepadLoop(controller, readToggle, last_press, last_pressB) { // refer
         //console.log('Inactive.');
     }
 
-    setTimeout(function(){gamepadLoop(controller, readToggle, last_press, last_pressB);}, 50);
+    setTimeout(function(){gamepadLoop(controller, readToggle, last_press, last_pressB);}, 100);
 }
 
 //console.log('waiting for ctrl input')
@@ -125,6 +129,7 @@ window.addEventListener("gamepadconnected", function(e) {
     gp.buttons.length, gp.axes.length);
     $('#controller-status').text("Status: Reading Input (press 'B' to stop).");
     gamepadLoop(gp, true, false, false);
+    //setInterval(gamepadLoop, 50);
 });
 $(document).ready(function()
 {

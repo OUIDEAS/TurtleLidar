@@ -319,7 +319,7 @@
                 bat_volts = data.battery_voltage;
                 if(bat_volts <= 0)
                     bat_volts = "N/A";
-                document.getElementById("BatteryVoltage").innerHTML = "Battery = " + bat_volts + " V";
+                document.getElementById("BatteryVoltage").innerHTML = "Battery = " + bat_volts.toFixed(2) + " V";
                 document.getElementById("scanstatus").innerHTML = data.status_text;
                 console.log(data);
                 setTimeout(checkStatus,500);

@@ -20,12 +20,11 @@ import LidarPlot
 import io
 import os
 
-camera = cv2.VideoCapture(0)
 
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
-outputFrame = None
+# outputFrame = None
 SendFrame = None
 lock = threading.Lock()
 
@@ -135,21 +134,32 @@ def plot():
 					 mimetype='image/png')
 
 def gen_frames():
+	global lock, SendFrame
+	camera = cv2.VideoCapture(0)
+	max_temp_exceed = False
 	while True:
 		success, frame = camera.read()  # read the camera frame
 		if not success:
 			break
 		else:
 			piTemp = getPiTemp()
-			if (piTemp and piTemp > 70.0):
-				DebugPrint("CPU is too HOT!")
+
+			if((piTemp and piTemp < 60.0) and max_temp_exceed):
+				max_temp_exceed = False
+				DebugPrint("GenFrame: Temp lowered, camera processing back " + str(piTemp))
+
+			if ((piTemp and piTemp > 70.0) or max_temp_exceed):
+				DebugPrint("GenFrame: CPU is too HOT! " + str(piTemp))
 				time.sleep(1)
 				SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 				img_loc = os.path.join(SITE_ROOT, "static/img", "TooHot.png")
 				frame = cv2.imread(img_loc)
+				max_temp_exceed = True
 				#stop motors?
 				#continue
-			frame = imutils.resize(frame, width=480)
+			else:
+				#DebugPrint("GenFrame: CPU OK " + str(piTemp))
+				frame = imutils.resize(frame, width=480)
 
 			# grab the current timestamp and draw it on the frame
 			timestamp = datetime.datetime.now()
@@ -158,7 +168,11 @@ def gen_frames():
 						cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 1)
 
 			ret, buffer = cv2.imencode('.jpg', frame)
+
+
 			frame = buffer.tobytes()
+			with lock:
+				SendFrame = frame
 			yield (b'--frame\r\n'
 				   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
 
@@ -248,7 +262,7 @@ def scan_status():
 	tempC = getPiTemp()
 	if(tempC is None):
 		tempC = "N/A"
-	DebugPrint("CPU Temp "+ str(tempC))
+	DebugPrint("Check: CPU Temp " + str(tempC))
 
 	message = "Error with LidarStatus database"
 	with TurtleLidarDB() as db:
@@ -328,7 +342,7 @@ def scan_endpoint():
 	with lock:  # Unsure if this is needed?
 		if SendFrame is not None:
 			Image = SendFrame
-			Image = cv2.imencode('.png', Image)[1]
+			#Image = cv2.imencode('.jpg', Image)[1]
 			data_encode = np.array(Image)
 			str_encode = data_encode.tostring()
 		else:

@@ -185,7 +185,7 @@
                         <div class="col-md-6">
                             <div class="card ">
                                 <div class="card-header ">
-                                    <h4 class="card-title">Video Feed &nbsp;<i class="nc-icon nc-cctv"></i></h4>
+                                    <h4 class="card-title">Video Feed<i class="nc-icon nc-cctv"></i></h4>
                                     <p class="card-category">Stream from onboard camera.</p>
                                 </div>
                                 <div class="card-body ">
@@ -211,6 +211,7 @@
                         <div class="col-md-3">
                             <div class="card">
                                 <div class="card-header">
+                                    <button type="button" onclick="DoScan();">Scan Now</button>
                                     <h4 class="card-title">Controller &nbsp;<i class="nc-icon nc-controller-modern"></i></h4>
                                 </div>
                                 <div class="card-body ">
@@ -355,6 +356,21 @@
         var newWidth = Number.parseInt(document.getElementById("videowidth").value);
         document.getElementById("videofeed").width = newWidth;
         setCookie("videofeedwidth", newWidth.toString());
+    }
+    function DoScan()
+    {
+        $.ajax({
+            type: "POST",
+            url: "/api/scan",
+            data: {
+                data: $("nada").val()
+            },
+            success: function (data, status, jqXHR) {
+                console.log(data);
+            }
+        });
+
+        return true;
     }
 </script>
 </html>

@@ -50,6 +50,9 @@
                     <div id="BatteryVoltage">
                         BatteryVoltage=?
                     </div>
+                    <div id="cputemp">
+                        Rufus Temp = ? C
+                    </div>
                 </div>
                 <ul class="nav">
                     <!-- <li class="nav-item active">
@@ -199,7 +202,7 @@
                                     </div> -->
                                 </div>
                                 <div id="setvideowidth">
-                                    <label for="videowidth">Max stick:</label>
+                                    <label for="videowidth">Max Width:</label>
                                     <input type="text" id="videowidth" name="videowidth" value="480">
                                     <button id="setvideowith" onclick="setVideoWidth()">Set</button>
                                 </div>
@@ -320,6 +323,13 @@
                 if(bat_volts <= 0)
                     bat_volts = "N/A";
                 document.getElementById("BatteryVoltage").innerHTML = "Battery = " + bat_volts.toFixed(2) + " V";
+
+                cpu_temp = data.cpu_temp;
+                if(typeof cpu_temp === "number" || cpu_temp instanceof Number) {
+                    cpu_temp = data.cpu_temp.toFixed(2);
+                }
+                document.getElementById("cputemp").innerHTML = "Pi Temp = " + cpu_temp + " C";
+
                 document.getElementById("scanstatus").innerHTML = data.status_text;
                 console.log(data);
                 setTimeout(checkStatus,500);

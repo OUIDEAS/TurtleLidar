@@ -416,57 +416,7 @@ class TurtleLidarDB:
         rows = self.c.fetchall()
         return rows
 
-    def create_csv_zip_bytes(self):
-        self.insert_debug_msg("create_csv")
 
-        rows = self.get_all_lidar_ids()
-        k = max(rows)
-
-        ImageData = {}
-        LidarData = {}
-        for i in range(k[0]):
-            data = self.get_lidar_data_byID(i+1)
-            dt = datetime.fromtimestamp(data['Time'])
-            date_time = dt.strftime("%m-%d-%Y_%H.%M.%S")
-            LidarData[date_time] = io.StringIO()
-            ImageData[date_time] = data["image"]
-
-            writer = csv.writer(LidarData[date_time], dialect='excel', delimiter=',')
-            writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',
-                             'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY', 'magZ',
-                             'BatVolt'])
-            FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data['Time'], data["AvgR"], data['StdRadius'],
-                        data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"],
-                        data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
-                        data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
-                        data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
-                        data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"]]
-            writer.writerow(FirstRow)
-            writer.writerows(data["Lidar"][1:])
-
-        zip_file = io.BytesIO()
-        with zipfile.ZipFile(zip_file, 'w') as zf:
-            for file in LidarData:
-                filename = file + '.csv'
-                zipdata = zipfile.ZipInfo(filename)
-                zipdata.compress_type = zipfile.ZIP_BZIP2
-                zipdata.date_time = time.localtime(time.time())[:6]
-                zf.writestr(zipdata, LidarData[file].getvalue())
-
-                if ImageData[file] is not None and ImageData[file] != 'Image':
-                    filename = file + '.JPEG'
-                    zipdata = zipfile.ZipInfo(filename)
-                    zipdata.compress_type = zipfile.ZIP_BZIP2
-                    zipdata.date_time = time.localtime(time.time())[:6]
-                    zf.writestr(zipdata, ImageData[file])
-
-        zip_file.seek(0)
-        return zip_file
-
-    def create_csv_zip(self, filename='LidarData.zip'):
-        csvbytes = self.create_csv()
-        with open(filename, "wb") as f:  ## Excel File
-            f.write(csvbytes.getbuffer())
         # self.insert_debug_msg("create_csv_zip")
         #
         # self.c.execute('''SELECT id FROM LidarData''')
@@ -538,6 +488,80 @@ class TurtleLidarDB:
             self.conn.commit()
         self.conn.close()
 
+def create_csv_zip_bytes():
+    DebugPrint("create_csv")
+    with TurtleLidarDB() as db:
+        rows = db.get_all_lidar_ids()
+
+    k = max(rows)
+
+    ImageData = {}
+    LidarData = {}
+    PlotData = {}
+    #for i in range(k[0]):
+    for row in rows:
+        dataid = row[0]
+        DebugPrint("Saving Lidar ID: " + str(dataid))
+        with TurtleLidarDB() as db:
+            data = db.get_lidar_data_byID(dataid)
+
+        dt = datetime.fromtimestamp(data['Time'])
+        date_time = dt.strftime("%m-%d-%Y_%H.%M.%S")
+        LidarData[date_time] = io.StringIO()
+        ImageData[date_time] = data["image"]
+
+        with TurtleLidarDB() as db:
+            plotdata = db.get_polarplot_by_lidarID(dataid)
+        if(plotdata is None):
+            plotdata = LidarPlot.GenerateDataPolarPlotByData(data)
+            with TurtleLidarDB() as db:
+                db.insert_polarplot(plotdata, dataid)
+
+        PlotData[date_time] = plotdata.read()
+
+        writer = csv.writer(LidarData[date_time], dialect='excel', delimiter=',')
+        writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',
+                         'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY', 'magZ',
+                         'BatVolt'])
+        FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data['Time'], data["AvgR"], data['StdRadius'],
+                    data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"],
+                    data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
+                    data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
+                    data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
+                    data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"]]
+        writer.writerow(FirstRow)
+        writer.writerows(data["Lidar"][1:])
+
+    zip_file = io.BytesIO()
+    with zipfile.ZipFile(zip_file, 'w') as zf:
+        for file in LidarData:
+            filename = file + '.csv'
+            zipdata = zipfile.ZipInfo(filename)
+            zipdata.compress_type = zipfile.ZIP_BZIP2
+            zipdata.date_time = time.localtime(time.time())[:6]
+            zf.writestr(zipdata, LidarData[file].getvalue())
+
+            if ImageData[file] is not None and ImageData[file] != 'Image':
+                filename = file + '.PNG'
+                zipdata = zipfile.ZipInfo(filename)
+                zipdata.compress_type = zipfile.ZIP_BZIP2
+                zipdata.date_time = time.localtime(time.time())[:6]
+                zf.writestr(zipdata, ImageData[file])
+            if PlotData[file] is not None and PlotData[file] != 'Image':
+                filename = 'DATAPLOT'+file + '.PNG'
+                zipdata = zipfile.ZipInfo(filename)
+                zipdata.compress_type = zipfile.ZIP_BZIP2
+                zipdata.date_time = time.localtime(time.time())[:6]
+                zf.writestr(zipdata, PlotData[file])
+
+    zip_file.seek(0)
+    return zip_file
+
+# def create_csv_zip( filename='LidarData.zip'):
+#     csvbytes = self.create_csv()
+#     with open(filename, "wb") as f:  ## Excel File
+#         f.write(csvbytes.getbuffer())
+
 def DebugPrintStore(msg,bStore):
     print(msg)
     if(bStore):
@@ -555,8 +579,6 @@ def printLidarStatus(msg=None, battery_voltage = -1):
 
 if __name__ == "__main__":
 
-
-
     with TurtleLidarDB() as db:
         #segment is to insert polarplots if missing...
         rows = db.get_all_lidar_ids()
@@ -567,7 +589,7 @@ if __name__ == "__main__":
             if(not db.get_polarplot_by_lidarID(snap)):
                 print(newplot)
                 db.insert_polarplot(newplot, snap)
-        #db.create_csv_zip()
+        #create_csv_zip()
 
     #with TurtleLidarDB() as db:
     #    db.create_debug_table()

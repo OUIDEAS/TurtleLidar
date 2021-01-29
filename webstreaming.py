@@ -14,7 +14,7 @@ import time
 import cv2
 import zmq
 import sys
-from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint
+from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint, create_csv_zip_bytes
 import json
 import LidarPlot
 import io
@@ -69,8 +69,7 @@ def sensorData():
 
 @app.route('/database')
 def downloadFile ():
-	with TurtleLidarDB() as db:
-		memory_file = db.create_csv_zip_bytes()
+	memory_file = create_csv_zip_bytes()
 	return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
 	# path = 'LidarData.db'
 	# return send_file(path, as_attachment=True)

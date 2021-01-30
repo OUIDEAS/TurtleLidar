@@ -4,7 +4,7 @@
 # import the necessary packages
 # from pyimagesearch.motion_detection import SingleMotionDetector
 from imutils.video import VideoStream
-from flask import Response, Flask, render_template, request, jsonify, send_file, current_app
+from flask import Response, Flask, render_template, request, jsonify, send_file
 import numpy as np
 import threading
 import argparse
@@ -14,7 +14,7 @@ import time
 import cv2
 import zmq
 import sys
-from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint, create_csv_zip_bytes
+from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint, create_csv_zip_bytes, clear_db_by_items
 import json
 import LidarPlot
 import io
@@ -68,9 +68,37 @@ def sensorData():
 	# return the rendered template
 	return render_template("table.html", displayEntries=displayEntries)
 
-@app.route('/database')
+@app.route('/cleardata', methods=['POST'])
+def cleardata_item ():
+	jsondata = request.get_json(silent=True)
+	#print(jsondata)
+	if(jsondata is None):
+		DebugPrint("Missing selected items in json form")
+		return "error"
+
+	idlist = jsondata['selitems']
+	DebugPrint("web wants to remove items")
+	for id in idlist:
+		DebugPrint(str(id))
+
+	clear_db_by_items(idlist)
+
+	return Response(status=200)
+
+
+@app.route('/database', methods=['POST'])
 def downloadFile ():
-	memory_file = create_csv_zip_bytes()
+	jsondata = request.get_json(silent=True)
+	#print(jsondata)
+	if(jsondata is None):
+		DebugPrint("Missing selected items in json form")
+		return "error"
+
+	idlist = jsondata['selitems']
+	DebugPrint("web wants items")
+	for id in idlist:
+		DebugPrint(str(id))
+	memory_file = create_csv_zip_bytes(idlist=idlist)
 	return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
 	# path = 'LidarData.db'
 	# return send_file(path, as_attachment=True)
@@ -97,18 +125,18 @@ def getdataplotpic(dataid):
 	pimage = None
 
 	with TurtleLidarDB() as db:
-		pimage = db.get_polarplot_by_lidarID(dataid)
+		pimage, lsq_data = db.get_polarplot_by_lidarID(dataid)
 
-	if(not pimage):
+	if(pimage is None):
 		data = None
 		with TurtleLidarDB() as db:
 			data = db.get_lidar_data_byID(dataid)
 		if(not data):
 			return "error getting data"
-		pimage = LidarPlot.GenerateDataPolarPlotByData(data)
+		pimage, lsq_data = LidarPlot.GenerateDataPolarPlotByData(data)
 		if(pimage):
 			with TurtleLidarDB() as db:
-				db.insert_polarplot(pimage, dataid)
+				db.insert_polarplot(pimage, dataid, lsq_data)
 	#image_binary = LidarPlot.GiveTestImg()
 	# response = make_response(image_binary)
 	# response.headers.set('Content-Type', 'image/png')
@@ -179,64 +207,6 @@ def gen_frames():
 @app.route('/video_feed')
 def video_feed():
 	return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-
-# def video_stream(frameCount):
-# 	# grab global references to the video stream, output frame, and
-# 	# lock variables
-# 	global vs, outputFrame, lock, SendFrame
-#
-# 	# # initialize the motion detector and the total number of frames
-# 	# # read thus far
-# 	# md = SingleMotionDetector(accumWeight=0.1)
-# 	# total = 0
-#
-# 	# loop over frames from the video stream
-# 	while True:
-# 		piTemp = getPiTemp()
-# 		if(piTemp and piTemp > 70.0):
-# 			DebugPrint("CPU is too HOT!")
-# 			time.sleep(1)
-# 			continue
-#
-# 		# read the next frame from the video stream, resize it
-# 		frame = vs.read()
-# 		frame = imutils.resize(frame, width=480)
-#
-# 		# grab the current timestamp and draw it on the frame
-# 		timestamp = datetime.datetime.now()
-# 		cv2.putText(frame, timestamp.strftime(
-# 			"%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10),
-# 			cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 1)
-# 			# cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 0), 1)
-#
-# 		# lock
-# 		with lock:
-# 			outputFrame = frame.copy()
-# 			SendFrame = frame
-		
-# def generate():
-# 	# grab global references to the output frame and lock variables
-# 	global outputFrame, lock
-#
-# 	# loop over frames from the output stream
-# 	while True:
-# 		# wait until the lock is acquired
-# 		with lock:
-# 			# check if the output frame is available, otherwise skip
-# 			# the iteration of the loop
-# 			if outputFrame is None:
-# 				continue
-#
-# 			# encode the frame in JPEG format
-# 			(flag, encodedImage) = cv2.imencode(".jpg", outputFrame)
-#
-# 			# ensure the frame was successfully encoded
-# 			if not flag:
-# 				continue
-#
-# 		# yield the output frame in the byte format
-# 		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' +
-# 			bytearray(encodedImage) + b'\r\n')
 
 def getPiTemp():
 	try:

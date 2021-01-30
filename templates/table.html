@@ -190,12 +190,15 @@ function timeConverter(UNIX_timestamp){
                     <div class="card-header ">
                         <h4 class="card-title">Turtle Lidar Data</h4>
                         <p class="card-category">
-                            <a href="./database" download="RobotLidarData.zip">Download CSV Zip File</a>
+                            <!--<a href="./database" download="RobotLidarData.zip">Download CSV Zip File</a>-->
+                            <button type="button" onclick="DownloadData();">Download Data</button>
+                            <button type="button" onclick="RequestClearData();">Clear Data</button>
                         </p>
                     </div>
                     <div class="card-body table-full-width table-responsive">
                         <table id="datatable" class="table table-hover">
                             <thead>
+                                <th>Download</th>
                                 <th>ID</th>
                                 <th>Timestamp</th>
                                 <th>Odometer</th>
@@ -214,6 +217,7 @@ function timeConverter(UNIX_timestamp){
                                     <tr id="row{{ row[0] }}">
                                         {% for item in row %}
                                             {% if loop.index == 1 %}
+                                                <td><input type="checkbox" id="checkbox{{ row[0] }}" name="checkbox_dataselect" checked="true"></td>
                                                 <td>{{item}}</td>
                                             {% elif loop.index == 2 %}
                                                 <td><script>document.write(timeConverter({{item}}));</script></td>
@@ -350,7 +354,111 @@ function hideimage(dataid, camordata) {
     }
 
 }
+function GetChecks()
+{
+    var checkboxes = document.getElementsByName("checkbox_dataselect");
+    var checkboxesChecked = [];
+    // loop over them all
+    for (var i=0; i<checkboxes.length; i++) {
+        // And stick the checked ones onto an array...
+        if (checkboxes[i].checked) {
+            var newitem = checkboxes[i].id.replace("checkbox","");
+            newitem = parseInt(newitem);
+            checkboxesChecked.push(newitem);
+        }
+    }
+    // Return the array if it is non-empty, or null
+    return checkboxesChecked.length > 0 ? checkboxesChecked : null;
+}
+function ClearAllChecks()
+{
+    var checkboxes = document.getElementsByName("checkbox_dataselect");
+    // loop over them all
+    for (var i=0; i<checkboxes.length; i++) {
+        checkboxes[i].checked = false;
+    }
+}
+function DownloadData()
+{
+    var req_items = GetChecks();
+    req_items = JSON.stringify({selitems:req_items});
+    $.ajax({
+            type: "POST",
+            url: "/database",
+            data: req_items,
+            //dataType: "json",
+            contentType: "application/json",
+            xhrFields: {
+                responseType: 'blob' // to avoid binary data being mangled on charset conversion
+            },
+            success:
+                function gotDownload(blob, status, xhr)
+                {
+                    // check for a filename
+                    var filename = "";
+                    var disposition = xhr.getResponseHeader('Content-Disposition');
+                    if (disposition && disposition.indexOf('attachment') !== -1) {
+                        var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                        var matches = filenameRegex.exec(disposition);
+                        if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+                    }
 
+                    if (typeof window.navigator.msSaveBlob !== 'undefined') {
+                        // IE workaround for "HTML7007: One or more blob URLs were revoked by closing the blob for which they were created. These URLs will no longer resolve as the data backing the URL has been freed."
+                        window.navigator.msSaveBlob(blob, filename);
+                    } else {
+                        var URL = window.URL || window.webkitURL;
+                        var downloadUrl = URL.createObjectURL(blob);
+
+                        if (filename) {
+                            // use HTML5 a[download] attribute to specify filename
+                            var a = document.createElement("a");
+                            // safari doesn't support this yet
+                            if (typeof a.download === 'undefined') {
+                                window.location.href = downloadUrl;
+                            } else {
+                                a.href = downloadUrl;
+                                a.download = filename;
+                                document.body.appendChild(a);
+                                a.click();
+                            }
+                        } else {
+                            window.location.href = downloadUrl;
+                        }
+
+                        setTimeout(function () { URL.revokeObjectURL(downloadUrl); }, 100); // cleanup
+                    }
+                }
+            },
+        );
+
+    return true;
+}
+function RequestClearData()
+{
+    var answer = prompt("Please confirm that you wish to delete all selected data by typing in 'Rufus'", "");
+
+    if (answer != "Rufus") {
+        alert("Incorrect answer, not deleting anything");
+        return false;
+    }
+    console.log("Requesting data delete...");
+    var req_items = GetChecks();
+    ClearAllChecks();
+    req_items = JSON.stringify({selitems:req_items});
+    $.ajax({
+            type: "POST",
+            url: "/cleardata",
+            data: req_items,
+            //dataType: "json",
+            contentType: "application/json",
+            success: function (data, status, jqXHR) {
+                location.reload();
+            }
+        });
+
+        return true;
+}
 
 </script>
 </html>

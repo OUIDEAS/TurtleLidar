@@ -15,18 +15,23 @@
     <link href="{{ url_for('static', filename="css/demo.css")}}" rel="stylesheet" />
 </head>
 <body>
-    <button type="button">Stop Logging</button>
-    <input type="checkbox" id="showtimestamp" name="showtimestamp" value="True">
-    <label for="showtimestamp">Show timestamp</label>
-    <input type="checkbox" id="autoscroll" name="autoscroll" value="True" checked>
-    <label for="autoscroll">Autoscroll</label>
-    <table id="debugtable">
-        <tbody>
-                <tr>
-                    <td>Debug Log:</td>
-                </tr>
-        </tbody>
-    </table>
+    <div style="position: sticky; top: 0;">
+        <button type="button" onclick="RequestDBClear();">Clear Database...</button>
+        <button type="button" onclick="StopLogging();" id="stopbutton">Stop Logging</button>
+        <input type="checkbox" id="showtimestamp" name="showtimestamp" value="True">
+        <label for="showtimestamp">Show timestamp</label>
+        <input type="checkbox" id="autoscroll" name="autoscroll" value="True" checked>
+        <label for="autoscroll">Autoscroll</label>
+    </div>
+    <div>
+        <table id="debugtable">
+            <tbody>
+                    <tr>
+                        <td>Debug Log:</td>
+                    </tr>
+            </tbody>
+        </table>
+    </div>
 </body>
 <!--   Core JS Files   -->
 <script src="{{ url_for('static', filename="js/core/jquery.3.2.1.min.js")}}" type="text/javascript"></script>
@@ -41,4 +46,39 @@
 <!-- Control Center for Light Bootstrap Dashboard: scripts for the example pages etc -->
 <script src="{{ url_for('static', filename="js/light-bootstrap-dashboard.js")}}" type="text/javascript"></script>
 <script src="{{ url_for('static', filename="js/debugfeed.js")}}"></script>
+<script>
+    function RequestDBClear()
+    {
+        var answer = prompt("Please confirm that you wish to delete all selected data by typing in 'Rufus'", "");
+
+        if (answer.localeCompare("Rufus") != 0) {
+            alert("Incorrect answer, not deleting anything");
+            return false;
+        }
+        console.log("Requesting data delete...");
+
+        req_items = JSON.stringify({selitems:[-1]});
+        $.ajax({
+                type: "POST",
+                url: "/cleardata",
+                data: req_items,
+                contentType: "application/json",
+                success: function (data, status, jqXHR) {
+                    location.reload();
+                }
+            });
+
+        return true;
+    }
+    function StopLogging()
+    {
+        id = document.getElementById("stopbutton");
+        if(id.innerText.localeCompare("Stop Logging") == 0)
+        {
+            id.innerText = "Start Logging";
+        }
+        else
+            id.innerText = "Stop Logging";
+    }
+</script>
 </html>

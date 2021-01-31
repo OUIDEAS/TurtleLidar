@@ -191,7 +191,8 @@ class TurtleLidarDB:
         create_table_sql = """CREATE TABLE IF NOT EXISTS PolarPlots (
                                             id integer PRIMARY KEY,
                                             lidarid integer,
-                                            polarimage blob
+                                            polarimage blob,
+                                            lsq_data_s blob
                                         );"""
         try:
             self.c.execute(create_table_sql)
@@ -209,13 +210,15 @@ class TurtleLidarDB:
         rows = self.c.fetchall()
         if not rows:
             plotdata = None
+            lsq_data = None
         else:
             row = rows[0]
             plotdata = pickle.loads(row[2])
+            lsq_data = pickle.loads(row[3])#{'center': row[3], 'width': row[4], 'height': row[5], 'phi': row[6]}
 
-        return plotdata
+        return plotdata, lsq_data
 
-    def insert_polarplot(self, img, lidarID):
+    def insert_polarplot(self, img, lidarID, lsq_data):
         if not self.check_polarplots_table_exists():
             self.create_polarplot_table()
 
@@ -224,10 +227,10 @@ class TurtleLidarDB:
             return -1
 
         Image = pickle.dumps(img)
-
-        insertsql = '''INSERT INTO PolarPlots (lidarid, polarimage) VALUES(?,?) '''
+        lsq_data_s = pickle.dumps(lsq_data)
+        insertsql = '''INSERT INTO PolarPlots (lidarid, polarimage, lsq_data_s) VALUES(?,?,?) '''
         if isinstance(lidarID, int):
-            data = (lidarID, Image)
+            data = (lidarID, Image, lsq_data_s)
             self.c.execute(insertsql, data)
             self.conn.commit()
         else:
@@ -351,7 +354,7 @@ class TurtleLidarDB:
     def get_all_lidar_data(self):
         self.insert_debug_msg("get_table_data")
 
-        self.c.execute('''SELECT id,timestamp,odometer, avgR, stdR, minR, maxR, xCenter, yCenter, batVolt FROM LidarData''')
+        self.c.execute('''SELECT id,timestamp,odometer, avgR, stdR, minR, maxR, xCenter, yCenter, batVolt FROM LidarData WHERE Deleted=\'False\'''')
         rows = self.c.fetchall()
         out = []
         for row in rows:
@@ -394,7 +397,9 @@ class TurtleLidarDB:
             # print(LidarData)
         return LidarData
 
-    def delete_lidar_data(self, RowID):
+    def delete_lidar_data_byid(self, id):
+
+    #def delete_lidar_data(self, RowID):
         self.insert_debug_msg("delete_lidar_data")
 
         """
@@ -407,14 +412,17 @@ class TurtleLidarDB:
                   SET Deleted = ?
                   WHERE id = ?'''
 
-        data = ("True", RowID)
+        data = ("True", id)
         self.c.execute(sql, data)
         self.conn.commit()
 
     def get_all_lidar_ids(self):
-        self.c.execute('''SELECT id FROM LidarData''')
+        self.c.execute('''SELECT id FROM LidarData WHERE Deleted=\'False\'''')
         rows = self.c.fetchall()
-        return rows
+        idlist = []
+        for row in rows:
+            idlist.append(row[0])
+        return idlist
 
 
         # self.insert_debug_msg("create_csv_zip")
@@ -488,19 +496,44 @@ class TurtleLidarDB:
             self.conn.commit()
         self.conn.close()
 
-def create_csv_zip_bytes():
-    DebugPrint("create_csv")
-    with TurtleLidarDB() as db:
-        rows = db.get_all_lidar_ids()
+def clear_db_by_items(idlist):
+    DebugPrint("clear_db_by_items")
+    if(idlist is None):
+        DebugPrint("incorrect idlist")
 
-    k = max(rows)
+    if(idlist[0] == -1):
+        DebugPrint("Clearing all items...")
+        with TurtleLidarDB() as db:
+            idlist = db.get_all_lidar_ids()
+
+    for id in idlist:
+        with TurtleLidarDB() as db:
+            DebugPrint("Marking item for delete ")
+            DebugPrint(str(id))
+            db.delete_lidar_data_byid(id)
+
+    return 0
+
+
+def create_csv_zip_bytes(idlist=None):
+    DebugPrint("create_csv")
+    if(idlist is None):
+        DebugPrint("Requesting all data for zip")
+        with TurtleLidarDB() as db:
+            rows = db.get_all_lidar_ids()
+
+    else:
+        rows = idlist
+        DebugPrint("Requesting set of data ids ")
+        #DebugPrint(len(rows))
+        #k = max(rows)
 
     ImageData = {}
     LidarData = {}
     PlotData = {}
     #for i in range(k[0]):
     for row in rows:
-        dataid = row[0]
+        dataid = row#[0]
         DebugPrint("Saving Lidar ID: " + str(dataid))
         with TurtleLidarDB() as db:
             data = db.get_lidar_data_byID(dataid)
@@ -511,24 +544,26 @@ def create_csv_zip_bytes():
         ImageData[date_time] = data["image"]
 
         with TurtleLidarDB() as db:
-            plotdata = db.get_polarplot_by_lidarID(dataid)
-        if(plotdata is None):
-            plotdata = LidarPlot.GenerateDataPolarPlotByData(data)
+            plot_img, lsq_data = db.get_polarplot_by_lidarID(dataid)
+        if plot_img is None:
+            plot_img, lsq_data = LidarPlot.GenerateDataPolarPlotByData(data)
             with TurtleLidarDB() as db:
-                db.insert_polarplot(plotdata, dataid)
+                db.insert_polarplot(plot_img, dataid, lsq_data=lsq_data)
 
-        PlotData[date_time] = plotdata.read()
+        PlotData[date_time] = plot_img.read()
 
         writer = csv.writer(LidarData[date_time], dialect='excel', delimiter=',')
         writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',
                          'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY', 'magZ',
-                         'BatVolt'])
+                         'BatVolt',
+                         'lsq_center_x', 'lsq_center_y', 'lsq_width', 'lsq_height', 'lsq_phi'])
         FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data['Time'], data["AvgR"], data['StdRadius'],
                     data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"],
                     data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
                     data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
                     data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
-                    data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"]]
+                    data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"],
+                    lsq_data['center'][0], lsq_data['center'][1], lsq_data['width'], lsq_data['height'], lsq_data['phi']]
         writer.writerow(FirstRow)
         writer.writerows(data["Lidar"][1:])
 
@@ -579,16 +614,16 @@ def printLidarStatus(msg=None, battery_voltage = -1):
 
 if __name__ == "__main__":
 
-    with TurtleLidarDB() as db:
-        #segment is to insert polarplots if missing...
-        rows = db.get_all_lidar_ids()
-        k = max(rows)+1
-        for snap in range(1, k[0]):
-            print("plot for " + str(snap))
-            newplot = LidarPlot.GenerateDataPolarPlotByID(snap)
-            if(not db.get_polarplot_by_lidarID(snap)):
-                print(newplot)
-                db.insert_polarplot(newplot, snap)
+    # with TurtleLidarDB() as db:
+    #     #segment is to insert polarplots if missing...
+    #     rows = db.get_all_lidar_ids()
+    #     k = max(rows)+1
+    #     for snap in range(1, k[0]):
+    #         print("plot for " + str(snap))
+    #         newplot = LidarPlot.GenerateDataPolarPlotByID(snap)
+    #         if(not db.get_polarplot_by_lidarID(snap)):
+    #             print(newplot)
+    #             db.insert_polarplot(newplot, snap)
         #create_csv_zip()
 
     #with TurtleLidarDB() as db:

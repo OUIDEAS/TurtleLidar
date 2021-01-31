@@ -58,7 +58,7 @@ def GenerateDataPolarPlotByData(data):
     # Eclipse Fit
     reg = LsqEllipse().fit(coord)
     center, width, height, phi = reg.as_parameters()
-
+    lsq_data = {'center': center, 'width': width, 'height': height, 'phi': phi}
     # Center of Fit
     xc = center[0]
     yc = center[1]
@@ -94,7 +94,7 @@ def GenerateDataPolarPlotByData(data):
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)
-    return buf
+    return buf, lsq_data
 
 #testfromDB()
 # im = Image.open(buf)

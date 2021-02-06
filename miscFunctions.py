@@ -35,7 +35,7 @@ def encoder_to_odo(enc):
 
 class ReadSerialTurtle:
     # def __init__(self, port='/dev/ttyACM0', baud=115200):
-    def __init__(self, port='/dev/ttyUSB0', baud=115200):
+    def __init__(self, port='/dev/turtle/USB_micro', baud=115200):
         try:
             self.ser = serial.Serial(port, baud, timeout=5)
         except serial.SerialException as e:
@@ -47,6 +47,7 @@ class ReadSerialTurtle:
         data = [0]
         while data[0] != 'data':
             if self.ser is not None:
+                self.ser.flushInput()
                 read_serial = self.ser.readline()
                 # read_serial = self.doRead()
                 data = read_serial.decode('utf-8')

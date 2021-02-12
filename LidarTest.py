@@ -1,4 +1,3 @@
-from RP_LIDAR import RPLidar, RPLidarException
 import time
 from TurtleLidarDB import TurtleLidarDB
 from miscFunctions import find_center
@@ -29,40 +28,10 @@ def doRead(ser):
 
 def run():
     '''Main function'''
-    # lidar = RPLidar(PORT_NAME, 256000)
-    # lidar = RPLidar(PORT_NAME)
-    # t = time.time()
-    #
-    # ang = []
-    # dis = []
-    # for i in range(10):
-    #     try:
-    #         print('Recording measurments... Press Crl+C to stop.')
-    #         for measurment in lidar.iter_measures():
-    #             # line = '\t'.join(str(v) for v in measurment)
-    #             if time.time() - t >= 5:
-    #                 if measurment[3] != 0:
-    #                     ang.append(measurment[2])
-    #                     dis.append(measurment[3])
-    #             if time.time() - t >= 20:
-    #                 break
-    #     except KeyboardInterrupt:
-    #         print('Stoping.')
-    #     except RPLidarException as e:
-    #         print(e)
-    #         continue
-    #     except Exception as e:
-    #         print(e)
-    #     finally:
-    #         break
-    # lidar.stop()
-    # lidar.stop_motor()
-    # lidar.disconnect()
     with RPLidarClass() as RP:
         print("getting data")
         X = RP.get_lidar_data(5)
     # X = (ang, dis)
-
     return X
 
 

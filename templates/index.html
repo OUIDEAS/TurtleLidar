@@ -354,6 +354,8 @@
     function setVideoWidth()
     {
         var newWidth = Number.parseInt(document.getElementById("videowidth").value);
+        if(newWidth > 1024 || newWdith < 320)
+            newWidth = 480;
         document.getElementById("videofeed").width = newWidth;
         setCookie("videofeedwidth", newWidth.toString());
     }

@@ -47,13 +47,16 @@ class ReadSerialTurtle:
         data = [0]
         while data[0] != 'data':
             if self.ser is not None:
-                self.ser.flushInput()
-                read_serial = self.ser.readline()
-                # read_serial = self.doRead()
-                data = read_serial.decode('utf-8')
-                data = re.sub(r'[()]', '', data)
-                data = data.split(", ")
-
+                try:
+                    self.ser.flushInput()
+                    read_serial = self.ser.readline()
+                    # read_serial = self.doRead()
+                    data = read_serial.decode('utf-8')
+                    data = re.sub(r'[()]', '', data)
+                    data = data.split(", ")
+                except Exception as e:
+                    print(e)
+                    
                 if data[0] == "data":
                     euler = (float(data[1]), float(data[2]), float(data[3]))
                     gyro = (float(data[4]), float(data[5]), float(data[6]))

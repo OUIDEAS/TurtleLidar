@@ -235,8 +235,12 @@ def scan_status():
 	DebugPrint("Check: CPU Temp " + str(tempC))
 
 	message = "Error with LidarStatus database"
-	with TurtleLidarDB() as db:
-		message, fbattery_voltage = db.get_lidar_status()
+	fbattery_voltage = -1
+	try:
+		with TurtleLidarDB() as db:
+			message, fbattery_voltage = db.get_lidar_status()
+	except Exception as e:
+		print(e)
 	#print(message)
 	return jsonify(
 		status_text=message,

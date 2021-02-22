@@ -36,7 +36,7 @@ class TurtleDriver:
 
     def initServo(self):
         self.servo_angle = 0
-        self.set_servo(3, self.servo_angle - 20)
+        self.set_servo(3, self.servo_angle + 5)
 
     def set_motors(self, msg):
         if len(msg) < 4:
@@ -165,7 +165,7 @@ class TurtleDriver:
     def zeroLidar(self):
         self.initServo()
         time.sleep(1)
-        self.steplidar(3, -30)
+        self.steplidar(3, -20)
 
         print("Zeroing Lidar")
 

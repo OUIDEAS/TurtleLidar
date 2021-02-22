@@ -90,7 +90,7 @@ try:
                     ScanTime = time.time()
                     printLidarStatus("Beginning Zero")
                     DebugPrint("Beginning Zero")
-                    # td.zeroLidar()
+                    td.zeroLidar()
                     printLidarStatus("Lidar Zeroed...Scanning...")
                     DebugPrint("Scanning")
                     scan = td.lidarScan(5)

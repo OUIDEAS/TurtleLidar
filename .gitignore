@@ -167,3 +167,4 @@ dmypy.json
 # Pycharm
 *.idea
 LidarData.db
+save.dat

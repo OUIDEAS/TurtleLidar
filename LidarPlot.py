@@ -134,6 +134,7 @@ def GenerateDataPolarPlotByData(data):
     yadj = []
     a_adj = []
     r_adj = []
+    MM_TO_INCH = 0.03937007874
 
     for pair in coord:
         xadjp = pair[0] - center[0]
@@ -141,7 +142,7 @@ def GenerateDataPolarPlotByData(data):
         xadj.append(xadjp)
         yadj.append(yadjp)
 
-        rp = np.sqrt((xadjp) ** 2 + (yadjp ) ** 2)
+        rp = np.sqrt((xadjp) ** 2 + (yadjp ) ** 2)*MM_TO_INCH
         r_adj.append(rp)
 
         ap = np.arctan2(yadjp, xadjp)
@@ -156,10 +157,11 @@ def GenerateDataPolarPlotByData(data):
     fitA = []
     fitR = []
     angles = np.linspace(0, 360, 300)
+
     for a in angles:
         x1 = width * np.cos(np.deg2rad(a)) #+ xc
         y1 = height * np.sin(np.deg2rad(a)) #+ yc
-        R = np.sqrt(x1 ** 2 + y1 ** 2)
+        R = np.sqrt(x1 ** 2 + y1 ** 2)*MM_TO_INCH
         an = np.arctan2(y1, x1)
         fitA.append(an)
         fitR.append(R)
@@ -171,6 +173,7 @@ def GenerateDataPolarPlotByData(data):
     #####plt.polar(alist,rlist)
     #####ax.scatter(x, y)
     #####ax.scatter(xadj, yadj)
+
     ax.scatter(a_adj, r_adj)
 
     #raw points
@@ -184,10 +187,10 @@ def GenerateDataPolarPlotByData(data):
     ax.plot(fitA, fitR, c='red')
 
 
-    ax.legend(['Ellipse Fit [mm]', 'Lidar Range [mm]', 'Center of Fit'], loc='upper right')
+    ax.legend(['Ellipse Fit [in.]', 'Lidar Range [in.]', 'Center of Fit'], loc='upper right')
     ax.grid(True)
     ax.set_aspect('equal', 'box')
-    #plt.show()
+    plt.show()
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
     buf.seek(0)

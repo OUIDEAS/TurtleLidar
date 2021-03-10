@@ -146,10 +146,11 @@ mountoffset = -90
 datapath = "..\\LiDARData\\"
 
 #csvfile = open(datapath+"12-18-2020_20.35.37.csv", newline='')
-# print(datapath+"PipeInField\\11-03-2020_13.49.32.csv")
+print(datapath+"PipeInField\\11-03-2020_13.49.32.csv")
+csvfile = datapath+"PipeInField\\11-03-2020_13.49.32.csv"
 # print(datapath+"PipeInField\\11-03-2020_13.38.48.csv")
 # csvfile = datapath+"02-19-2021_14.05.34.csv"
-# ret = ReadFile(csvfile)
+ret = ReadFile(csvfile)
 # folder = datapath+"\\PipeInField\\"
 # folder = datapath
 # dataret = []

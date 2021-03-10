@@ -397,6 +397,23 @@ class TurtleLidarDB:
             # print(LidarData)
         return LidarData
 
+    def really_delete_lidar_data_byid(self, id):
+        # def delete_lidar_data(self, RowID):
+        self.insert_debug_msg("delete_lidar_data")
+        sql = ''' DELETE FROM LidarData WHERE id = ?'''
+        data = (id,)
+        self.c.execute(sql, data)
+        self.conn.commit()
+
+        sql = ''' DELETE FROM PolarPlots WHERE lidarid = ?'''
+        data = (id,)
+        self.c.execute(sql, data)
+        self.conn.commit()
+
+        sql = ''' DELETE FROM DebugData'''
+        self.c.execute(sql)
+        self.conn.commit()
+
     def delete_lidar_data_byid(self, id):
 
     #def delete_lidar_data(self, RowID):
@@ -495,6 +512,22 @@ class TurtleLidarDB:
         else:
             self.conn.commit()
         self.conn.close()
+
+def delete_db_by_items(idlist):
+    DebugPrint("clear_db_by_items")
+    if(idlist is None):
+        DebugPrint("incorrect idlist")
+
+    if(idlist[0] == -1):
+        DebugPrint("Wrong (-1) id listed for delete")
+
+    for id in idlist:
+        with TurtleLidarDB() as db:
+            DebugPrint("DELETE item")
+            DebugPrint(str(id))
+            db.really_delete_lidar_data_byid(id)
+    return 0
+
 
 def clear_db_by_items(idlist):
     DebugPrint("clear_db_by_items")

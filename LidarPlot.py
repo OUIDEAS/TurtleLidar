@@ -166,7 +166,7 @@ def GenerateDataPolarPlotByData(data):
         fitA.append(an)
         fitR.append(R)
 
-    fig = plt.figure()
+    fig = plt.figure(dpi=300)
     ax = fig.add_subplot(111, projection='polar')
     #####ax = fig.add_subplot(111)
     #####fig, ax = plt.subplots()
@@ -174,25 +174,26 @@ def GenerateDataPolarPlotByData(data):
     #####ax.scatter(x, y)
     #####ax.scatter(xadj, yadj)
 
-    ax.scatter(a_adj, r_adj)
+    ax.scatter(a_adj, r_adj, label='Lidar Range [in.]')
 
     #raw points
     #ax.scatter(alist, rlist, s=1)
 
     #center point
     #ax.scatter(Ca, Cr, s=10)
-    ax.scatter(0, 0, s=10)
+    ax.scatter(0, 0, s=10, label='Center of Fit')
 
     #fit shape
-    ax.plot(fitA, fitR, c='red')
+    ax.plot(fitA, fitR, c='red', label='Ellipse Fit [in.]')
 
+    ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8), shadow=True, ncol=1)
 
-    ax.legend(['Ellipse Fit [in.]', 'Lidar Range [in.]', 'Center of Fit'], loc='upper right')
+    #ax.legend([, , ], loc='upper right')
     ax.grid(True)
     ax.set_aspect('equal', 'box')
     plt.show()
     buf = io.BytesIO()
-    plt.savefig(buf, format='png')
+    plt.savefig(buf, format='png', bbox_inches='tight')
     buf.seek(0)
     return buf, lsq_data
 

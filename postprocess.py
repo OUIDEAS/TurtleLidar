@@ -136,41 +136,83 @@ def ReadFile(filename):
         fitR.append(R)
 
     fitdata = {'x': fitX, 'y': fitY, 'fitA': fitA, 'fitR': fitR}
-    lsqdata = {'center': center, 'height': height, 'width':width, 'phi': phi}
+    lsqdata = {'center': center, 'height': height, 'width': width, 'phi': phi}
     rawdata = {'x': xraw, 'y': yraw,'a': alist_raw, 'r': dlist_raw}
+    centerdata = {'x': xadj, 'y': yadj, 'a': a_adj, 'r': r_adj}
     measured = {'height': height_avg, 'width': wdith_avg}
-    returndata = {"fit": fitdata, "lsq": lsqdata, "raw": rawdata, "measured": measured, "angleoffset": mountoffset}
+    returndata = {"fit": fitdata, "lsq": lsqdata, "raw": rawdata, "centered": centerdata, "measured": measured, "angleoffset": mountoffset}
     return returndata
 
 mountoffset = -90
 datapath = "..\\LiDARData\\"
 
 #csvfile = open(datapath+"12-18-2020_20.35.37.csv", newline='')
-print(datapath+"PipeInField\\11-03-2020_13.49.32.csv")
-csvfile = datapath+"PipeInField\\11-03-2020_13.49.32.csv"
+# print(datapath+"PipeInField\\11-03-2020_13.49.32.csv")
+# csvfile = datapath+"PipeInField\\11-03-2020_13.49.32.csv"
 # print(datapath+"PipeInField\\11-03-2020_13.38.48.csv")
-# csvfile = datapath+"02-19-2021_14.05.34.csv"
-ret = ReadFile(csvfile)
+csvfile = datapath+"12-18-2020_15.26.20.csv"
+# ret = ReadFile(csvfile)
+# fig = plt.figure(dpi=150)
+# ax = fig.subplots()
+# a = ret['raw']['a']
+# r = ret['raw']['r']
+# x = ret['raw']['x']
+# y = ret['raw']['y']
+# a = ret['centered']['a']
+# r = ret['centered']['r']
+# x = ret['centered']['x']
+# y = ret['centered']['y']
+# print(np.average(r)*2)
+# print(len(y))
+# ax.scatter(x, y, 1)
+#csvfile = open(datapath+"PipeInField\\11-03-2020_13.49.32.csv", newline='')
+#ret = ReadFile(csvfile)
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection='polar')
+# fig, ax = plt.subplots()
+# # ax.scatter(x, y)
+# ax.scatter(xadj, yadj)
+# # ax.scatter(alist, rlist, s=1)
+# # ax.scatter(Ca, Cr, s=10)
+# # ax.plot(fitA, fitR, c='red')
+# ax.plot(fitX, fitY, c='red')
+# # ax.legend(['Ellipse Fit', 'Lidar Data', 'Center of Fit'], loc='upper right')
+# ax.grid(True)
+# # ax.set_aspect('equal', 'box')
+# # ax.set_ylabel('Distance [inch]')
+# # ax.set_xlabel('Samples [-]')
+# # plt.ylim([24, 26])
+# # ax.legend(['Fit-Width', 'Fit-Height', 'Exact-Width','Exact-Height'])
+# # ax.legend(['Exact-Width','Exact-Height'])
+# plt.show()
+
+
 # folder = datapath+"\\PipeInField\\"
-# folder = datapath
-# dataret = []
-# for filename in os.listdir(folder):
-#     if(not filename.endswith(".csv")):
-#         continue
-#     readfile = folder + filename
-#     print(readfile)
-#     ret = ReadFile(readfile)
-#     dataret.append(ret)
+folder = datapath
+dataret = []
+for filename in os.listdir(folder):
+    if(not filename.endswith(".csv")):
+        continue
+    readfile = folder + filename
+    print(readfile)
+    ret = ReadFile(readfile)
+    dataret.append(ret)
 #
 # pickle.dump(dataret, open('save.dat', "wb"))
 
-dataret = pickle.load(open('save.dat', "rb"))
+# dataret = pickle.load(open('save.dat', "rb"))
 
 height = []
 width = []
 heightm = []
 widthm = []
+rlist = []
+MM_TO_INCH = 0.03937007874
+
 for datai in dataret:
+    for rx in datai['centered']['r']:
+        rlist.append(rx*MM_TO_INCH)
+
     hinch = scimath.units.api.UnitScalar(datai['lsq']['height'], units='mm').as_units(inch)
     hinchm = scimath.units.api.UnitScalar(datai['measured']['height'], units='mm').as_units(inch)
     winch = scimath.units.api.UnitScalar(datai['lsq']['width'], units='mm').as_units(inch)
@@ -185,8 +227,13 @@ for datai in dataret:
     width.append(float(2*winch))
     heightm.append(float(hinchm))
     widthm.append(float(winchm))
+
+print("Average diameter")
+print(np.average(rlist)*2)
 wavg = np.average(widthm)
 havg = np.average(heightm)
+wavg = np.average(width)
+havg = np.average(height)
 print("Measured average width/height [inches]")
 print(wavg)
 print(havg) #real is 23.75
@@ -194,7 +241,9 @@ print("Measured piped diameter is 23.75 inches")
 print("Calibration offset is: ")
 offset = np.average([wavg,havg])-23.75
 print(str(offset)+" inches")
-fig, ax = plt.subplots()
+fig = plt.figure(dpi=300)
+ax = fig.subplots()
+
 x = np.linspace(1, len(height), len(height))
 # ax.scatter(x, height)
 # ax.scatter(x, width)

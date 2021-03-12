@@ -14,7 +14,7 @@ import time
 import cv2
 import zmq
 import sys
-from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint, create_csv_zip_bytes, clear_db_by_items, delete_db_by_items
+from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint, create_csv_zip_bytes, clear_db_by_items, delete_db_by_items, deleteplot_db_by_items
 import json
 import LidarPlot
 import io
@@ -68,8 +68,25 @@ def sensorData():
 	# return the rendered template
 	return render_template("table.html", displayEntries=displayEntries)
 
+@app.route('/clearplots', methods=['POST'])
+def deleteplot_item():
+	jsondata = request.get_json(silent=True)
+	#print(jsondata)
+	if(jsondata is None):
+		DebugPrint("Clear plot: Missing selected items in json form")
+		return "error"
+
+	idlist = jsondata['selitems']
+	DebugPrint("web wants to delete plots")
+	for id in idlist:
+		DebugPrint(str(id))
+
+	deleteplot_db_by_items(idlist)
+
+	return Response(status=200)
+
 @app.route('/resetdata', methods=['POST'])
-def resetdata_item ():
+def resetdata_item():
 	jsondata = request.get_json(silent=True)
 	#print(jsondata)
 	if(jsondata is None):

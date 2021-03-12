@@ -9,6 +9,7 @@ import io
 import zipfile
 import os
 import LidarPlot
+import numpy as np
 
 class TurtleLidarDB:
     def __enter__(self, db_file="LidarData.db"):
@@ -397,6 +398,26 @@ class TurtleLidarDB:
             # print(LidarData)
         return LidarData
 
+    def really_delete_plot_data_byid(self, id):
+        sql = ''' DELETE FROM PolarPlots WHERE lidarid = ?'''
+        data = (id,)
+        self.c.execute(sql, data)
+        self.conn.commit()
+
+    def really_delete_lidar_data_byid(self, id):
+        # def delete_lidar_data(self, RowID):
+        self.insert_debug_msg("delete_lidar_data")
+        sql = ''' DELETE FROM LidarData WHERE id = ?'''
+        data = (id,)
+        self.c.execute(sql, data)
+        self.conn.commit()
+
+        self.really_delete_plot_data_byid(id)
+
+        sql = ''' DELETE FROM DebugData'''
+        self.c.execute(sql)
+        self.conn.commit()
+
     def delete_lidar_data_byid(self, id):
 
     #def delete_lidar_data(self, RowID):
@@ -496,6 +517,37 @@ class TurtleLidarDB:
             self.conn.commit()
         self.conn.close()
 
+def deleteplot_db_by_items(idlist):
+    DebugPrint("deleteplot_db_by_items")
+    if (idlist is None):
+        DebugPrint("incorrect idlist")
+
+    if (idlist[0] == -1):
+        DebugPrint("Wrong (-1) id listed for delete")
+
+    for id in idlist:
+        with TurtleLidarDB() as db:
+            DebugPrint("DELETE plot")
+            DebugPrint(str(id))
+            db.really_delete_plot_data_byid(id)
+    return 0
+
+def delete_db_by_items(idlist):
+    DebugPrint("delete_db_by_items")
+    if(idlist is None):
+        DebugPrint("incorrect idlist")
+
+    if(idlist[0] == -1):
+        DebugPrint("Wrong (-1) id listed for delete")
+
+    for id in idlist:
+        with TurtleLidarDB() as db:
+            DebugPrint("DELETE item")
+            DebugPrint(str(id))
+            db.really_delete_lidar_data_byid(id)
+    return 0
+
+
 def clear_db_by_items(idlist):
     DebugPrint("clear_db_by_items")
     if(idlist is None):
@@ -553,19 +605,75 @@ def create_csv_zip_bytes(idlist=None):
         PlotData[date_time] = plot_img.read()
 
         writer = csv.writer(LidarData[date_time], dialect='excel', delimiter=',')
-        writer.writerow(['Angle', 'Range', 'Time', 'AvgR', 'StdR', 'minR', 'maxR', 'xCenter', 'yCenter', 'Odometer',
-                         'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY', 'magZ',
-                         'BatVolt',
-                         'lsq_center_x', 'lsq_center_y', 'lsq_width', 'lsq_height', 'lsq_phi'])
-        FirstRow = [data["Lidar"][0][0], data["Lidar"][0][1], data['Time'], data["AvgR"], data['StdRadius'],
-                    data["minR"], data['maxR'], data['xCenter'], data['yCenter'], data["odo"],
-                    data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
-                    data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
-                    data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
-                    data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"],
-                    lsq_data['center'][0], lsq_data['center'][1], lsq_data['width'], lsq_data['height'], lsq_data['phi']]
-        writer.writerow(FirstRow)
-        writer.writerows(data["Lidar"][1:])
+
+        MM_TO_INCH = 0.03937007874
+
+
+        yfirst = MM_TO_INCH * data["Lidar"][0][1] * np.sin(data["Lidar"][0][0])
+        xfirst = MM_TO_INCH * data["Lidar"][0][1] * np.cos(data["Lidar"][0][0])
+        INCLUDEXY = True
+        if(INCLUDEXY == True):
+            writer.writerow(
+                ['Angle [deg]', 'Range [in]', 'X [in]', 'Y [in]', 'Time', 'AvgR [in]', 'StdR', 'minR [in]', 'maxR [in]',
+                 'xCenter [in]', 'yCenter [in]', 'Odometer',
+                 'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY',
+                 'magZ',
+                 'BatVolt',
+                 'lsq_center_x [in]', 'lsq_center_y', 'lsq_width [in]', 'lsq_height [in]', 'lsq_phi'])
+            FirstRow = [str(data["Lidar"][0][0]), data["Lidar"][0][1]*MM_TO_INCH, xfirst, yfirst, data['Time'], data["AvgR"]*MM_TO_INCH, data['StdRadius']*MM_TO_INCH,
+                        data["minR"]*MM_TO_INCH, data['maxR']*MM_TO_INCH, data["odo"],
+                        data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
+                        data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
+                        data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
+                        data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"],
+                        lsq_data['center'][0]*MM_TO_INCH, lsq_data['center'][1]*MM_TO_INCH, lsq_data['width']*MM_TO_INCH, lsq_data['height']*MM_TO_INCH, lsq_data['phi']]
+            writer.writerow(FirstRow)
+            angles = []
+            ranges = []
+            index = 0
+            for a, r in data["Lidar"]:
+                if index == 0:
+                    index = 1
+                    continue
+                row = [float(a), float(r*MM_TO_INCH), MM_TO_INCH * r* np.sin(a), MM_TO_INCH * r * np.cos(a)]
+                writer.writerow(row)
+        else:
+            writer.writerow(
+                ['Angle [deg]', 'Range [in]', 'Time', 'AvgR [in]', 'StdR', 'minR [in]', 'maxR [in]',
+                 'xCenter [in]', 'yCenter [in]', 'Odometer',
+                 'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY',
+                 'magZ',
+                 'BatVolt',
+                 'lsq_center_x [in]', 'lsq_center_y', 'lsq_width [in]', 'lsq_height [in]', 'lsq_phi'])
+            FirstRow = [str(data["Lidar"][0][0]), data["Lidar"][0][1] * MM_TO_INCH, data['Time'],
+                        data["AvgR"] * MM_TO_INCH, data['StdRadius'] * MM_TO_INCH,
+                        data["minR"] * MM_TO_INCH, data['maxR'] * MM_TO_INCH, data["odo"],
+                        data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
+                        data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
+                        data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
+                        data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"],
+                        lsq_data['center'][0] * MM_TO_INCH, lsq_data['center'][1] * MM_TO_INCH,
+                        lsq_data['width'] * MM_TO_INCH, lsq_data['height'] * MM_TO_INCH, lsq_data['phi']]
+            writer.writerow(FirstRow)
+            angles = []
+            ranges = []
+            index = 0
+            for a, r in data["Lidar"]:
+                if index == 0:
+                    index = 1
+                    continue
+                row = [float(a), float(r * MM_TO_INCH)]
+                writer.writerow(row)
+            #angles.append(a)
+            #ranges.append(r*MM_TO_INCH)
+
+        #angles = data["Lidar"][0][0]
+        #ranges = data["Lidar"][0][1] * MM_TO_INCH
+        #writer.writerows(angles)
+        #writer.writerows(ranges)
+
+        #writer.writerows(data["Lidar"][1:])
+
 
     zip_file = io.BytesIO()
     with zipfile.ZipFile(zip_file, 'w') as zf:

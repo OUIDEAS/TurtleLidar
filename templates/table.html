@@ -191,8 +191,12 @@ function timeConverter(UNIX_timestamp){
                         <h4 class="card-title">Turtle Lidar Data</h4>
                         <p class="card-category">
                             <!--<a href="./database" download="RobotLidarData.zip">Download CSV Zip File</a>-->
-                            <button type="button" onclick="DownloadData();">Download Data</button>
-                            <button type="button" onclick="RequestClearData();">Clear Data</button>
+                            <button type="button" onclick="DownloadData();">Download Selected Data</button>
+                            <button type="button" onclick="CheckAllRows();">Select All</button>
+                            <button type="button" onclick="ClearAllChecks();">Select None</button>
+                            <button type="button" onclick="RequestClearData();">Clear Selected Data</button>
+                            <button type="button" onclick="RequestClearPlots();">Clear Selected Plot</button>
+                            <button type="button" onclick="RequestResetData();">Reset Selected Data</button>
                         </p>
                     </div>
                     <div class="card-body table-full-width table-responsive">
@@ -436,7 +440,7 @@ function DownloadData()
 }
 function RequestClearData()
 {
-    var answer = prompt("Please confirm that you wish to delete all selected data by typing in 'Rufus'", "");
+    var answer = prompt("Please confirm that you wish to clear (removes from list) all selected data by typing in 'Rufus'", "");
 
     if (answer != "Rufus") {
         alert("Incorrect answer, not deleting anything");
@@ -459,6 +463,57 @@ function RequestClearData()
 
         return true;
 }
+function RequestResetData()
+{
+    var answer = prompt("Please confirm that you wish to reset (delete for good) all selected data by typing in 'Rufus'", "");
 
+    if (answer != "Rufus") {
+        alert("Incorrect answer, not deleting anything");
+        return false;
+    }
+    console.log("Requesting data delete...");
+    var req_items = GetChecks();
+    ClearAllChecks();
+    req_items = JSON.stringify({selitems:req_items});
+    $.ajax({
+            type: "POST",
+            url: "/resetdata",
+            data: req_items,
+            //dataType: "json",
+            contentType: "application/json",
+            success: function (data, status, jqXHR) {
+                location.reload();
+            }
+        });
+
+        return true;
+}
+function RequestClearPlots()
+{
+    console.log("Requesting plot delete...");
+    var req_items = GetChecks();
+    ClearAllChecks();
+    req_items = JSON.stringify({selitems:req_items});
+    $.ajax({
+            type: "POST",
+            url: "/clearplots",
+            data: req_items,
+            //dataType: "json",
+            contentType: "application/json",
+            success: function (data, status, jqXHR) {
+                location.reload();
+            }
+        });
+
+        return true;
+}
+function CheckAllRows()
+{
+    var checkboxes = document.getElementsByName("checkbox_dataselect");
+    // loop over them all
+    for (var i=0; i<checkboxes.length; i++) {
+        checkboxes[i].checked = true;
+    }
+}
 </script>
 </html>

@@ -3,7 +3,14 @@ import tkinter as tk
 from tkinter import ttk
 from tkcalendar import Calendar, DateEntry
 from tkinter.font import Font
+import datetime
 
+def doublezero(TIME):
+    if TIME < 10:
+        out = '0' + str(TIME)
+    else:
+        out = str(TIME)
+    return out
 
 class App(tk.Frame):
     def __init__(self):
@@ -12,12 +19,14 @@ class App(tk.Frame):
         self.date = None
         self.tme = None
 
-        self.hourstr=tk.StringVar(self,'12')
+        now = datetime.datetime.now()
+
+        self.hourstr=tk.StringVar(self, doublezero(now.hour))
         self.hour = tk.Spinbox(self,from_=0,to=23,wrap=True,textvariable=self.hourstr,width=2,state="readonly", font=Font(size=24, weight='bold'))
-        self.minstr=tk.StringVar(self,'00')
+        self.minstr=tk.StringVar(self, doublezero(now.minute))
 
         self.min = tk.Spinbox(self,from_=0,to=59,wrap=True,textvariable=self.minstr,width=2, font=Font(size=24, weight='bold'), state="readonly")    # ,state="readonly"
-        self.secstr=tk.StringVar(self,'00')
+        self.secstr=tk.StringVar(self, doublezero(now.second))
         self.sec = tk.Spinbox(self,from_=0,to=59,wrap=True,textvariable=self.secstr,width=2, font=Font(size=24, weight='bold'), state="readonly")
 
         self.last_valueSec = ""
@@ -86,10 +95,11 @@ if __name__ == "__main__":
     if gui.date is not None and gui.tme is not None:
         timeCMD = str(gui.date) + ' ' + str(gui.tme)
         print(timeCMD)
-        # setTimeCMD = "ssh 192.168.4.1 sudo date --set '" + timeCMD + "'"
-        setTimeCMD = "sudo date --set '" + timeCMD + "'"
+        setTimeCMD = "ssh 192.168.4.1 sudo date --set '" + timeCMD + "'"
+        setTimeCMD1 = "sudo date --set '" + timeCMD + "'"
         print(setTimeCMD)
         if platform.system() == 'Linux':
+            call(setTimeCMD1, shell=True)
             call(setTimeCMD, shell=True)
         else:
             print("Why are you not running this on a pi?")

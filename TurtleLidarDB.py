@@ -615,7 +615,7 @@ def create_csv_zip_bytes(idlist=None):
         if(INCLUDEXY == True):
             writer.writerow(
                 ['Angle [deg]', 'Range [in]', 'X [in]', 'Y [in]', 'Time', 'AvgR [in]', 'StdR', 'minR [in]', 'maxR [in]',
-                 'xCenter [in]', 'yCenter [in]', 'Odometer',
+                 'Odometer',
                  'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY',
                  'magZ',
                  'BatVolt',

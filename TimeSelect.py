@@ -66,7 +66,7 @@ class App(tk.Frame):
         M = self.minstr.get()
         S = self.secstr.get()
 
-        Time = H + ":" + M + ":" + S
+        Time = doublezero(int(H)) + ":" + doublezero(int(M)) + ":" + doublezero(int(S))
         return Time
 
     def end(self):

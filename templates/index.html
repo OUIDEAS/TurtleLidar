@@ -319,11 +319,16 @@
         $.ajax({
             type: "GET",
             url: "/scan_status",
-            success: function(data){
+            success: function(data) {
                 bat_volts = data.battery_voltage;
-                if(bat_volts <= 0)
-                    bat_volts = "N/A";
-                document.getElementById("BatteryVoltage").innerHTML = "Battery = " + bat_volts.toFixed(2) + " V";
+                if (bat_volts <= 0)
+                {
+                    document.getElementById("BatteryVoltage").innerHTML = "Battery = N/A";
+                }
+                else
+                {
+                    document.getElementById("BatteryVoltage").innerHTML = "Battery = " + bat_volts.toFixed(2) + " V";
+                }
 
                 cpu_temp = data.cpu_temp;
                 if(typeof cpu_temp === "number" || cpu_temp instanceof Number) {

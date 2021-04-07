@@ -50,8 +50,8 @@ time.sleep(.1)
 #with TurtleLidarDB() as db:
 #	displayEntries = db.create_debug_table()
 
-print("Web server started...")
-DebugPrint("Web server ready...")
+print("Turtle Web server started...")
+DebugPrint("Turtle Web server ready...")
 
 @app.route("/")
 def index():

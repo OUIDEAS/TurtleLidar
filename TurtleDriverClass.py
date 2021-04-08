@@ -192,13 +192,13 @@ class TurtleDriver:
                         print(Error)
                         coord = np.array([0, 0])
                         PrevError = np.append(PrevError, Error)
-                        self.steplidar(3, 2)
+                        self.steplidar(3, 4)
                         i += 1
                     else:
                         minVal = np.argmin(abs(PrevError))
                         FinalStep = minVal - i + 1
                         print(FinalStep)
-                        self.steplidar(3, FinalStep*2)
+                        self.steplidar(3, FinalStep*4)
                         print("Lidar Zeroed")
                         break
 

@@ -48,14 +48,17 @@ def GenerateDataPolarPlotByData_Uncentered(data):
     y = []
     alist = []
     rlist = []
+    offset = 90
     for pair in ldata:
         ang = np.deg2rad(pair[0])
-        yt = pair[1] * np.sin(ang)
-        xt = pair[1] * np.cos(ang)
+        yt = pair[1] * np.sin(ang + np.deg2rad(offset))
+        xt = -pair[1] * np.cos(ang + np.deg2rad(offset))
+        R1 = np.sqrt(xt ** 2 + yt ** 2)
+        ang1 = np.arctan2(yt, xt)
         x.append(xt)
         y.append(yt)
-        alist.append(ang)
-        rlist.append(pair[1])
+        alist.append(ang1)
+        rlist.append(R1)
     coord = np.array(list(zip(x, y)))
     x = np.array(x)
     y = np.array(y)
@@ -95,6 +98,7 @@ def GenerateDataPolarPlotByData_Uncentered(data):
     ax.scatter(Ca, Cr, s=10)
     ax.plot(fitA, fitR, c='red')
     ax.legend(['Ellipse Fit', 'Lidar Data', 'Center of Fit'], loc='upper right')
+    ax.set_rmin(0)
     ax.grid(True)
     ax.set_aspect('equal', 'box')
     # plt.show()
@@ -111,14 +115,17 @@ def GenerateDataPolarPlotByData(data):
     y = []
     alist = []
     rlist = []
+    offset = 90
     for pair in ldata:
         ang = np.deg2rad(pair[0])
-        yt = pair[1]*np.sin(ang)
-        xt = pair[1]*np.cos(ang)
+        yt = pair[1] * np.sin(ang + np.deg2rad(offset))
+        xt = -pair[1] * np.cos(ang + np.deg2rad(offset))
+        R1 = np.sqrt(xt ** 2 + yt ** 2)
+        ang1 = np.arctan2(yt, xt)
         x.append(xt)
         y.append(yt)
-        alist.append(ang)
-        rlist.append(pair[1])
+        alist.append(ang1)
+        rlist.append(R1)
     coord = np.array(list(zip(x, y)))
     x = np.array(x)
     y = np.array(y)
@@ -180,18 +187,18 @@ def GenerateDataPolarPlotByData(data):
     #ax.scatter(alist, rlist, s=1)
 
     #center point
-    #ax.scatter(Ca, Cr, s=10)
+    # ax.scatter(Ca, Cr, s=10)
     ax.scatter(0, 0, s=10, label='Center of Fit')
 
     #fit shape
     ax.plot(fitA, fitR, c='red', label='Ellipse Fit [in.]')
 
     ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8), shadow=True, ncol=1)
-
+    ax.set_rmin(0)
     #ax.legend([, , ], loc='upper right')
     ax.grid(True)
     ax.set_aspect('equal', 'box')
-    plt.show()
+    # plt.show()
     buf = io.BytesIO()
     plt.savefig(buf, format='png', bbox_inches='tight')
     buf.seek(0)
@@ -212,3 +219,13 @@ def GenerateDataPolarPlotByData(data):
 #     # #    return "error getting data"
 #     pimage, lsq_data = GenerateDataPolarPlotByData(data)
 
+
+if __name__ == '__main__':
+    from TurtleLidarDB import TurtleLidarDB
+
+    with TurtleLidarDB() as db:
+        data = db.get_lidar_data_byID(19)
+
+    buf = GenerateDataPolarPlotByData(data)
+    im = Image.open(buf[0])
+    im.show()

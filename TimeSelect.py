@@ -98,13 +98,17 @@ if __name__ == "__main__":
     if gui.date is not None and gui.tme is not None:
         timeCMD = str(gui.date) + ' ' + str(gui.tme)
         print(timeCMD)
-        setTimeCMD = "ssh 192.168.4.1 sudo date --set '" + str(gui.date) + ' +' + str(gui.tme) + "'"
+        # setTimeCMD = "ssh 192.168.4.1 sudo date --set '" + str(gui.date) + ' +' + str(gui.tme) + "'"
+        setTimeCMD = "ssh 192.168.4.1 sudo date --set '" + str(gui.date) + "'"
+        setTimeCMD0 = "ssh 192.168.4.1 sudo date --set '" + str(gui.tme) + "'"
         setTimeCMD1 = "sudo date --set '" + timeCMD + "'"
         print(setTimeCMD)
         if platform.system() == 'Linux':
             call(setTimeCMD1, shell=True)
             time.sleep(1)
             call(setTimeCMD, shell=True)
+            time.sleep(.1)
+            call(setTimeCMD0, shell=True)
 
         else:
             print("Why are you not running this on a pi?")

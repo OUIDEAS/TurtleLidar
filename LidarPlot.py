@@ -181,7 +181,7 @@ def GenerateDataPolarPlotByData(data):
     #####ax.scatter(x, y)
     #####ax.scatter(xadj, yadj)
 
-    ax.scatter(a_adj, r_adj, label='Lidar Range [in.]')
+    ax.scatter(a_adj, r_adj, s=1, label='Lidar Range [in.]')
 
     #raw points
     #ax.scatter(alist, rlist, s=1)

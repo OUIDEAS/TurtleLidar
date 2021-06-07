@@ -19,7 +19,7 @@ import json
 import LidarPlot
 import io
 import os
-
+import bjoern
 
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
@@ -122,7 +122,7 @@ def cleardata_item ():
 
 
 @app.route('/database', methods=['POST'])
-def downloadFile ():
+def downloadFile():
 	jsondata = request.get_json(silent=True)
 	#print(jsondata)
 	if(jsondata is None):
@@ -414,7 +414,10 @@ if __name__ == '__main__':
 	# app.run(host=args["ip"], port=args["port"], debug=True,
 	# 	threaded=True, use_reloader=False)
 
-	app.run(host="0.0.0.0", port="5555", debug=False,
-			threaded=True, use_reloader=False)
+	# app.run(host="0.0.0.0", port="5555", debug=False,
+	# 		threaded=True, use_reloader=False)
+
+	bjoern.run(app, "0.0.0.0", 5555)
+
 # release the video stream pointer
 #vs.stop()

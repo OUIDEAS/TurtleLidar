@@ -54,6 +54,7 @@ for i in range(n):
 
 printLidarStatus("Turtle Ready")
 
+lastscan = 0
 try:
     while True:
         evts = dict(poller.poll(timeout=1))
@@ -62,76 +63,84 @@ try:
             try:
                 topic = socket.recv_string()
                 pkt = socket.recv_pyobj()
+
                 # print(f"Topic: {topic} => {pkt}")
             except Exception:
                 topic = "Bad Input"
+                pkt = []
 
-            if topic == "motors":
-                if len(pkt) == 2:
-                    if len(motorBuffer) > n:
-                        motorBuffer = motorBuffer[-n:]
-                        motorBuffer.append([pkt[0], pkt[1]])
-                    else:
-                        motorBuffer.append([pkt[0], pkt[1]])
-                    tlast = time.time()
-            if topic == "scan":
-                if pkt[0] != False:
-                    try:
-                        batVolt = td.battery_status()
-                        printLidarStatus(battery_voltage=batVolt)
-                    except Exception as e:
-                        DebugPrint("Exception when getting battery status: " + str(e))
-                        batVolt = 0
+            # Wait a quarter second after lidar scans to clear buffer
+            if time.time() - lastscan >= .25:
+                if topic == "motors":
+                    if len(pkt) == 2:
+                        if len(motorBuffer) > n:
+                            motorBuffer = motorBuffer[-n:]
+                            motorBuffer.append([pkt[0], pkt[1]])
+                        else:
+                            motorBuffer.append([pkt[0], pkt[1]])
+                        tlast = time.time()
 
-                    printLidarStatus("Starting Scan", batVolt)
-                    DebugPrint("Beginning Scan")
+                if topic == "scan":
+                    if pkt[0] != False:
+                        try:
+                            batVolt = td.battery_status()
+                            printLidarStatus(battery_voltage=batVolt)
+                        except Exception as e:
+                            DebugPrint("Exception when getting battery status: " + str(e))
+                            batVolt = 0
+
+                        printLidarStatus("Starting Scan", batVolt)
+                        DebugPrint("Beginning Scan")
+                        td.stopTurtle()
+                        time.sleep(1)
+                        ScanTime = time.time()
+
+                        printLidarStatus("Beginning Zero")
+                        DebugPrint("Beginning Zero")
+                        td.zeroLidar()
+
+                        printLidarStatus("Lidar Zeroed...Scanning...")
+                        DebugPrint("Scanning")
+                        scan = td.lidarScan(5)
+                        printLidarStatus("Processing Data")
+
+                        if len(scan[0]) > 1:
+                            # Adjust data for circle center
+                            pipe_scan = find_center(scan)
+
+                            # Access data from micrcontroller
+                            data = ser.read_data()
+
+                            LidarData = {
+                                "Lidar": tuple(zip(scan[0], scan[1])),
+                                "Time": ScanTime,
+                                "odo": data[1],
+                                "AvgR": np.mean(pipe_scan[0]),
+                                "StdRadius": np.std(pipe_scan[0]),
+                                "minR": min(pipe_scan[0]),
+                                "maxR": max(pipe_scan[0]),
+                                "Xcenter": pipe_scan[1][0],
+                                "Ycenter": pipe_scan[1][1],
+                                "H/W": pipe_scan[3] / pipe_scan[2]
+                            }
+
+                            with TurtleLidarDB() as db:
+                                db.insert_lidar_data(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
+                                                     LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
+                                                     LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], data[0],
+                                                     pkt[1], batVolt)
+
+                            printLidarStatus("Scan Finished...Ready", batVolt)
+                            DebugPrint("Scan Finished")
+                        else:
+                            printLidarStatus("Scan Failed")
+                        lastscan = time.time()
+
+                if topic == "shutdown":
                     td.stopTurtle()
+                    ser.stopRead()
                     time.sleep(1)
-                    ScanTime = time.time()
-                    printLidarStatus("Beginning Zero")
-                    DebugPrint("Beginning Zero")
-                    td.zeroLidar()
-                    printLidarStatus("Lidar Zeroed...Scanning...")
-                    DebugPrint("Scanning")
-                    scan = td.lidarScan(5)
-                    printLidarStatus("Processing Data")
-
-                    if len(scan[0]) > 1:
-                        # Adjust data for circle center
-                        pipe_scan = find_center(scan)
-
-                        # Access data from micrcontroller
-                        data = ser.read_data()
-
-                        LidarData = {
-                            "Lidar": tuple(zip(scan[0], scan[1])),
-                            "Time": ScanTime,
-                            "odo": data[1],
-                            "AvgR": np.mean(pipe_scan[0]),
-                            "StdRadius": np.std(pipe_scan[0]),
-                            "minR": min(pipe_scan[0]),
-                            "maxR": max(pipe_scan[0]),
-                            "Xcenter": pipe_scan[1][0],
-                            "Ycenter": pipe_scan[1][1],
-                            "H/W": pipe_scan[3] / pipe_scan[2]
-                        }
-
-                        with TurtleLidarDB() as db:
-                            db.insert_lidar_data(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
-                                                 LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
-                                                 LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], data[0],
-                                                 pkt[1], batVolt)
-
-                        printLidarStatus("Scan Finished...Ready", batVolt)
-                        DebugPrint("Scan Finished")
-                    else:
-                        printLidarStatus("Scan Failed")
-
-            if topic == "shutdown":
-                td.stopTurtle()
-                ser.stopRead()
-                time.sleep(1)
-                raise SystemExit
+                    raise SystemExit
 
         # Battery
         if time.time() - tbat >= 10:

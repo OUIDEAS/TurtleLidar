@@ -11,34 +11,36 @@ import os
 import LidarPlot
 import numpy as np
 
+
 class TurtleLidarDB:
     def __enter__(self, db_file="LidarData.db"):
         self.conn = None
         try:
             self.conn = sqlite3.connect(db_file)
+            self.conn.execute('pragma journal_mode=wal;')
             self.c = self.conn.cursor()
         except Error as e:
             print(e)
 
         exists = self.check_lidar_data_table_exists()
-        if(exists == False):
+        if (exists == False):
             print("creating lidar data table")
             self.create_lidar_table()
 
         exists = self.check_lidar_status_table_exists()
-        if(exists == False):
+        if (exists == False):
             print("creating lidar status table")
             self.create_LidarStatus_table()
 
         exists = self.check_polarplots_table_exists()
-        if(exists == False):
+        if (exists == False):
             print("creating poloar plot table")
             self.create_polarplot_table()
 
         return self
 
     def create_lidar_table(self):
-        #self.insert_debug_msg("create_lidar_table")
+        # self.insert_debug_msg("create_lidar_table")
         create_table_sql = """CREATE TABLE IF NOT EXISTS LidarData (
                                             id integer PRIMARY KEY,
                                             timestamp REAL NOT NULL,
@@ -87,19 +89,19 @@ class TurtleLidarDB:
             exists = False
 
         return exists
-            
+
     def check_debug_table_exists(self):
         exists = False
 
         try:
             self.c.execute("""SELECT id FROM DebugData""")
             data = self.c.fetchall()
-            #print(data)
+            # print(data)
             exists = True
         except sqlite3.OperationalError as e:
-            #print("error: check_debug_table_exists")
-            #print(e)
-            #does not EXIST
+            # print("error: check_debug_table_exists")
+            # print(e)
+            # does not EXIST
             exists = False
 
         return exists
@@ -130,15 +132,15 @@ class TurtleLidarDB:
 
         return seldata.fetchall()
 
-    def get_last_n_debug_msg(self,numsel):
+    def get_last_n_debug_msg(self, numsel):
         selectsql = '''SELECT * FROM DebugData ORDER BY ID DESC LIMIT ?;'''
         try:
-            data = (numsel, )
+            data = (numsel,)
             seldata = self.c.execute(selectsql, data)
             newdata = []
             alldata = seldata.fetchall()
             for i in range(len(alldata), 0, -1):
-                newdata.append(alldata[i-1])
+                newdata.append(alldata[i - 1])
             seldata = newdata
         except Error as e:
             print("Select last n error with debug msg " + e)
@@ -155,13 +157,13 @@ class TurtleLidarDB:
             return -1
         return 0
 
-    def get_new_debug_msg_from_ID(self,lastID):
-        if(self.check_and_create_debug_table() == -1):
+    def get_new_debug_msg_from_ID(self, lastID):
+        if (self.check_and_create_debug_table() == -1):
             return None
 
         selectsql = '''SELECT * FROM DebugData WHERE ID > ? ORDER BY ID ASC LIMIT 100;'''
         try:
-            data = (lastID, )
+            data = (lastID,)
             seldata = self.c.execute(selectsql, data)
         except Error as e:
             print("Select last n error with debug msg " + e)
@@ -215,7 +217,7 @@ class TurtleLidarDB:
         else:
             row = rows[0]
             plotdata = pickle.loads(row[2])
-            lsq_data = pickle.loads(row[3])#{'center': row[3], 'width': row[4], 'height': row[5], 'phi': row[6]}
+            lsq_data = pickle.loads(row[3])  # {'center': row[3], 'width': row[4], 'height': row[5], 'phi': row[6]}
 
         return plotdata, lsq_data
 
@@ -242,7 +244,7 @@ class TurtleLidarDB:
 
     def create_LidarStatus_table(self):
         self.insert_debug_msg("create_LidarStatus_table")
-        if(self.check_lidar_status_table_exists()):
+        if (self.check_lidar_status_table_exists()):
             return 0
 
         create_table_sql = """CREATE TABLE IF NOT EXISTS LidarStatus (
@@ -270,31 +272,29 @@ class TurtleLidarDB:
             return -1
         return 0
 
-
-
     def update_lidar_status(self, msg=None, battery_voltage=-1):
         self.insert_debug_msg("update_lidar_status")
 
         sql_xtra = ""
-        if(battery_voltage >= 0 and msg):
+        if (battery_voltage >= 0 and msg):
             sql_xtra = "status = ?, battery_voltage = ?"
             data = (time.time(), msg, battery_voltage, 1)
-        elif(battery_voltage < 0 and msg):
+        elif (battery_voltage < 0 and msg):
             sql_xtra = "status = ?"
             data = (time.time(), msg, 1)
-        elif(battery_voltage >=0 and not msg):
+        elif (battery_voltage >= 0 and not msg):
             sql_xtra = "battery_voltage = ?"
             data = (time.time(), battery_voltage, 1)
         else:
-            #why would you do this?
+            # why would you do this?
             return None
 
-        #sql = "UPDATE LidarStatus SET timestamp = 42, status = 'hello-', battery_voltage = 4 WHERE id = 1;"
+        # sql = "UPDATE LidarStatus SET timestamp = 42, status = 'hello-', battery_voltage = 4 WHERE id = 1;"
 
         sql = "UPDATE LidarStatus SET timestamp = ?, " + sql_xtra + " WHERE id = ?"
         self.c.execute(sql, data)
-        #self.c.execute(sql, data)
-        #self.conn.commit()
+        # self.c.execute(sql, data)
+        # self.conn.commit()
 
         return self.c.lastrowid
 
@@ -303,16 +303,16 @@ class TurtleLidarDB:
         try:
             self.c.execute('''SELECT id,timestamp, status FROM LidarStatus''')
             data = self.c.fetchall()
-            #print(data)
+            # print(data)
             exists = True
         except sqlite3.OperationalError as e:
-            #print("check_lidar_status_table_exists -> " + str(e))
+            # print("check_lidar_status_table_exists -> " + str(e))
             exists = False
 
         return exists
 
     def get_lidar_status(self):
-        #self.insert_debug_msg("get_lidar_status")
+        # self.insert_debug_msg("get_lidar_status")
 
         message = ""
         battery = -1
@@ -321,9 +321,9 @@ class TurtleLidarDB:
             rows = self.c.fetchall()
             message = rows[0][2]
             battery = rows[0][3]
-            if(not battery):
+            if (not battery):
                 battery = -1
-            #print(rows)
+            # print(rows)
         except Error as e:
             self.insert_debug_msg(e)
 
@@ -355,14 +355,15 @@ class TurtleLidarDB:
     def get_all_lidar_data(self):
         self.insert_debug_msg("get_table_data")
 
-        self.c.execute('''SELECT id,timestamp,odometer, avgR, stdR, minR, maxR, xCenter, yCenter, batVolt FROM LidarData WHERE Deleted=\'False\'''')
+        self.c.execute(
+            '''SELECT id,timestamp,odometer, avgR, stdR, minR, maxR, xCenter, yCenter, batVolt FROM LidarData WHERE Deleted=\'False\'''')
         rows = self.c.fetchall()
         out = []
         for row in rows:
             row = list(row)
             o = pickle.loads(row[2])
             if type(o) is tuple:
-                row[2] = (o[0] + o[1] + o[2] + o[3])/4
+                row[2] = (o[0] + o[1] + o[2] + o[3]) / 4
             else:
                 row[2] = 0
             out.append(row)
@@ -376,7 +377,6 @@ class TurtleLidarDB:
         if not rows:
             LidarData = None
         for row in rows:
-
             LidarData = {
                 "Lidar": pickle.loads(bz2.decompress(row[3])),
                 "Time": row[1],
@@ -420,7 +420,7 @@ class TurtleLidarDB:
 
     def delete_lidar_data_byid(self, id):
 
-    #def delete_lidar_data(self, RowID):
+        # def delete_lidar_data(self, RowID):
         self.insert_debug_msg("delete_lidar_data")
 
         """
@@ -444,7 +444,6 @@ class TurtleLidarDB:
         for row in rows:
             idlist.append(row[0])
         return idlist
-
 
         # self.insert_debug_msg("create_csv_zip")
         #
@@ -503,19 +502,19 @@ class TurtleLidarDB:
                         zipdata.date_time = time.localtime(time.time())[:6]
                         zf.writestr(zipdata, ImageData[file])
 
-
     def drop_data(self):
         self.c.execute('''DROP TABLE IF EXISTS LidarData''')
         print('Data Deleted')
 
     def __exit__(self, ext_type, exc_value, traceback):
-        # Closes database connections, need to read through what the functions are explicitly doing
+        # Closes database connections
         self.c.close()
         if isinstance(exc_value, Exception):
             self.conn.rollback()
         else:
             self.conn.commit()
         self.conn.close()
+
 
 def deleteplot_db_by_items(idlist):
     DebugPrint("deleteplot_db_by_items")
@@ -532,12 +531,13 @@ def deleteplot_db_by_items(idlist):
             db.really_delete_plot_data_byid(id)
     return 0
 
+
 def delete_db_by_items(idlist):
     DebugPrint("delete_db_by_items")
-    if(idlist is None):
+    if (idlist is None):
         DebugPrint("incorrect idlist")
 
-    if(idlist[0] == -1):
+    if (idlist[0] == -1):
         DebugPrint("Wrong (-1) id listed for delete")
 
     for id in idlist:
@@ -550,10 +550,10 @@ def delete_db_by_items(idlist):
 
 def clear_db_by_items(idlist):
     DebugPrint("clear_db_by_items")
-    if(idlist is None):
+    if (idlist is None):
         DebugPrint("incorrect idlist")
 
-    if(idlist[0] == -1):
+    if (idlist[0] == -1):
         DebugPrint("Clearing all items...")
         with TurtleLidarDB() as db:
             idlist = db.get_all_lidar_ids()
@@ -569,7 +569,7 @@ def clear_db_by_items(idlist):
 
 def create_csv_zip_bytes(idlist=None):
     DebugPrint("create_csv")
-    if(idlist is None):
+    if (idlist is None):
         DebugPrint("Requesting all data for zip")
         with TurtleLidarDB() as db:
             rows = db.get_all_lidar_ids()
@@ -577,15 +577,15 @@ def create_csv_zip_bytes(idlist=None):
     else:
         rows = idlist
         DebugPrint("Requesting set of data ids ")
-        #DebugPrint(len(rows))
-        #k = max(rows)
+        # DebugPrint(len(rows))
+        # k = max(rows)
 
     ImageData = {}
     LidarData = {}
     PlotData = {}
-    #for i in range(k[0]):
+    # for i in range(k[0]):
     for row in rows:
-        dataid = row#[0]
+        dataid = row  # [0]
         DebugPrint("Saving Lidar ID: " + str(dataid))
         with TurtleLidarDB() as db:
             data = db.get_lidar_data_byID(dataid)
@@ -608,11 +608,10 @@ def create_csv_zip_bytes(idlist=None):
 
         MM_TO_INCH = 0.03937007874
 
-
         yfirst = MM_TO_INCH * data["Lidar"][0][1] * np.sin(data["Lidar"][0][0])
         xfirst = MM_TO_INCH * data["Lidar"][0][1] * np.cos(data["Lidar"][0][0])
         INCLUDEXY = True
-        if(INCLUDEXY == True):
+        if (INCLUDEXY == True):
             writer.writerow(
                 ['Angle [deg]', 'Range [in]', 'X [in]', 'Y [in]', 'Time', 'AvgR [in]', 'StdR', 'minR [in]', 'maxR [in]',
                  'Odometer',
@@ -620,13 +619,15 @@ def create_csv_zip_bytes(idlist=None):
                  'magZ',
                  'BatVolt',
                  'lsq_center_x [in]', 'lsq_center_y', 'lsq_width [in]', 'lsq_height [in]', 'lsq_phi'])
-            FirstRow = [str(data["Lidar"][0][0]), data["Lidar"][0][1]*MM_TO_INCH, xfirst, yfirst, data['Time'], data["AvgR"]*MM_TO_INCH, data['StdRadius']*MM_TO_INCH,
-                        data["minR"]*MM_TO_INCH, data['maxR']*MM_TO_INCH, data["odo"],
+            FirstRow = [str(data["Lidar"][0][0]), data["Lidar"][0][1] * MM_TO_INCH, xfirst, yfirst, data['Time'],
+                        data["AvgR"] * MM_TO_INCH, data['StdRadius'] * MM_TO_INCH,
+                        data["minR"] * MM_TO_INCH, data['maxR'] * MM_TO_INCH, data["odo"],
                         data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
                         data["gyro"][1][0], data["gyro"][1][1], data["gyro"][1][2],
                         data["gyro"][2][0], data["gyro"][2][1], data["gyro"][2][2],
                         data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"],
-                        lsq_data['center'][0]*MM_TO_INCH, lsq_data['center'][1]*MM_TO_INCH, lsq_data['width']*MM_TO_INCH, lsq_data['height']*MM_TO_INCH, lsq_data['phi']]
+                        lsq_data['center'][0] * MM_TO_INCH, lsq_data['center'][1] * MM_TO_INCH,
+                        lsq_data['width'] * MM_TO_INCH, lsq_data['height'] * MM_TO_INCH, lsq_data['phi']]
             writer.writerow(FirstRow)
             angles = []
             ranges = []
@@ -635,7 +636,7 @@ def create_csv_zip_bytes(idlist=None):
                 if index == 0:
                     index = 1
                     continue
-                row = [float(a), float(r*MM_TO_INCH), MM_TO_INCH * r* np.sin(a), MM_TO_INCH * r * np.cos(a)]
+                row = [float(a), float(r * MM_TO_INCH), MM_TO_INCH * r * np.sin(a), MM_TO_INCH * r * np.cos(a)]
                 writer.writerow(row)
         else:
             writer.writerow(
@@ -664,16 +665,15 @@ def create_csv_zip_bytes(idlist=None):
                     continue
                 row = [float(a), float(r * MM_TO_INCH)]
                 writer.writerow(row)
-            #angles.append(a)
-            #ranges.append(r*MM_TO_INCH)
+            # angles.append(a)
+            # ranges.append(r*MM_TO_INCH)
 
-        #angles = data["Lidar"][0][0]
-        #ranges = data["Lidar"][0][1] * MM_TO_INCH
-        #writer.writerows(angles)
-        #writer.writerows(ranges)
+        # angles = data["Lidar"][0][0]
+        # ranges = data["Lidar"][0][1] * MM_TO_INCH
+        # writer.writerows(angles)
+        # writer.writerows(ranges)
 
-        #writer.writerows(data["Lidar"][1:])
-
+        # writer.writerows(data["Lidar"][1:])
 
     zip_file = io.BytesIO()
     with zipfile.ZipFile(zip_file, 'w') as zf:
@@ -691,7 +691,7 @@ def create_csv_zip_bytes(idlist=None):
                 zipdata.date_time = time.localtime(time.time())[:6]
                 zf.writestr(zipdata, ImageData[file])
             if PlotData[file] is not None and PlotData[file] != 'Image':
-                filename = 'DATAPLOT'+file + '.PNG'
+                filename = 'DATAPLOT' + file + '.PNG'
                 zipdata = zipfile.ZipInfo(filename)
                 zipdata.compress_type = zipfile.ZIP_BZIP2
                 zipdata.date_time = time.localtime(time.time())[:6]
@@ -700,28 +700,31 @@ def create_csv_zip_bytes(idlist=None):
     zip_file.seek(0)
     return zip_file
 
+
 # def create_csv_zip( filename='LidarData.zip'):
 #     csvbytes = self.create_csv()
 #     with open(filename, "wb") as f:  ## Excel File
 #         f.write(csvbytes.getbuffer())
 
-def DebugPrintStore(msg,bStore):
+def DebugPrintStore(msg, bStore):
     print(msg)
-    if(bStore):
+    if (bStore):
         with TurtleLidarDB() as DB:
             DB.insert_debug_msg(msg)
+
 
 def DebugPrint(msg):
     DebugPrintStore(msg, True)
 
-def printLidarStatus(msg=None, battery_voltage = -1):
+
+def printLidarStatus(msg=None, battery_voltage=-1):
     if msg is not None:
         print("STATUS: " + msg)
     with TurtleLidarDB() as DB:
         DB.update_lidar_status(msg, battery_voltage)
 
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     # with TurtleLidarDB() as db:
     #     #segment is to insert polarplots if missing...
     #     rows = db.get_all_lidar_ids()
@@ -732,12 +735,12 @@ if __name__ == "__main__":
     #         if(not db.get_polarplot_by_lidarID(snap)):
     #             print(newplot)
     #             db.insert_polarplot(newplot, snap)
-        #create_csv_zip()
+    # create_csv_zip()
 
-    #with TurtleLidarDB() as db:
+    # with TurtleLidarDB() as db:
     #    db.create_debug_table()
-        # db.insert_debug_msg("i can has debug?")
-    #for i in range(0,25):
+    # db.insert_debug_msg("i can has debug?")
+    # for i in range(0,25):
     #	DebugPrint("tendies " + str(i))
     # DebugPrint("Hello " + str(time.time()))
     # with TurtleLidarDB() as db:
@@ -754,7 +757,7 @@ if __name__ == "__main__":
     #     print("Debug Table:")
     #     for row in data:
     #         print(str(row[0]) + "\t" + row[2])
-    #printLidarStatus("Ready")
+    # printLidarStatus("Ready")
 
     # with TurtleLidarDB() as db:
     #     db.check_lidar_status_table_exists()

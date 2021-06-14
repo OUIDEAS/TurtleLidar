@@ -7,6 +7,7 @@ from miscFunctions import find_center, ReadSerialTurtle
 import utils
 
 def DumpMessages(poller, elapsedExit):
+    print("DumpMessages")
     while time.time() > elapsedExit:
         evts = dict(poller.poll(timeout=1))
         if socket in evts:

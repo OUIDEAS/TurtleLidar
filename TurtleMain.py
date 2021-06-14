@@ -8,16 +8,16 @@ import utils
 
 def DumpMessages(poller, elapsedExit):
     print("DumpMessages")
-    # while time.time() > elapsedExit:
-    #     evts = dict(poller.poll(timeout=1))
-    #     if socket in evts:
-    #         try:
-    #             topic = socket.recv_string()
-    #             pkt = socket.recv_pyobj()
-    #             print("Dumping message")
-    #         except Exception:
-    #             print("no more messages")
-    #             return
+    while time.time() < elapsedExit:
+        evts = dict(poller.poll(timeout=1))
+        if socket in evts:
+            try:
+                topic = socket.recv_string()
+                pkt = socket.recv_pyobj()
+                print("Dumping message")
+            except Exception:
+                print("no more messages")
+                return
 
 DebugPrint("Turtle Main Start...")
 host = "127.0.0.1"

@@ -138,15 +138,16 @@ try:
                             with TurtleLidarDB() as db:
                                 db.insert_lidar_data(LidarData["Time"], LidarData["odo"], LidarData["Lidar"],
                                                      LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
-                                                     LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"], data[0],
-                                                     pkt[1], batVolt)
+                                                     LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"],
+                                                     data[0], pkt[1], batVolt)
 
                             printLidarStatus("Scan Finished...Ready", batVolt)
                             DebugPrint("Scan Finished")
                         else:
                             printLidarStatus("Scan Failed")
+                        DumpMessages(poller, time.time() + 1)
                         lastscan = time.time()
-                    DumpMessages(poller, time.time() + 1)
+
                 if topic == "shutdown":
                     td.stopTurtle()
                     ser.stopRead()

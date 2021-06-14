@@ -6,7 +6,17 @@ import numpy as np
 from miscFunctions import find_center, ReadSerialTurtle
 import utils
 
-# import pretty_errors
+def DumpMessages(poller, elapsedExit):
+    while time.time() > elapsedExit:
+        evts = dict(poller.poll(timeout=1))
+        if socket in evts:
+            try:
+                topic = socket.recv_string()
+                pkt = socket.recv_pyobj()
+                print("Dumping message")
+            except Exception:
+                print("no more messages")
+                return
 
 DebugPrint("Turtle Main Start...")
 host = "127.0.0.1"
@@ -135,7 +145,7 @@ try:
                         else:
                             printLidarStatus("Scan Failed")
                         lastscan = time.time()
-
+                    DumpMessages(poller, time.time() + 1)
                 if topic == "shutdown":
                     td.stopTurtle()
                     ser.stopRead()

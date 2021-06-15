@@ -83,7 +83,7 @@ try:
             # Wait a quarter second after lidar scans to clear buffer
             if time.time() - lastscan >= .25:
                 if topic == "motors":
-                    if time.time() - pkt[2] < .5:
+                    if time.time() - pkt[2] < .2:
                         if len(motorBuffer) > n:
                             motorBuffer = motorBuffer[-n:]
                             motorBuffer.append([pkt[0], pkt[1]])

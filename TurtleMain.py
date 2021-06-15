@@ -83,13 +83,16 @@ try:
             # Wait a quarter second after lidar scans to clear buffer
             if time.time() - lastscan >= .25:
                 if topic == "motors":
-                    if len(pkt) == 2:
+                    if time.time() - pkt[2] < .5:
                         if len(motorBuffer) > n:
                             motorBuffer = motorBuffer[-n:]
                             motorBuffer.append([pkt[0], pkt[1]])
                         else:
                             motorBuffer.append([pkt[0], pkt[1]])
                         tlast = time.time()
+                    else:
+                        DebugPrint("Old Messages in ZMQ buffer, dumping messages")
+                        DumpMessages(poller, time.time() + .1)
 
                 if topic == "scan":
                     if pkt[0] != False and time.time() - pkt[2] < .5:
@@ -145,9 +148,12 @@ try:
                             printLidarStatus("Scan Finished...Ready", batVolt)
                             DebugPrint("Scan Finished")
                         else:
-                            DumpMessages(poller, time.time() + 1)
+                            DumpMessages(poller, time.time() + 2)
                             printLidarStatus("Scan Failed")
                         lastscan = time.time()
+                    else:
+                        DebugPrint("Old Messages in ZMQ buffer, dumping messages")
+                        DumpMessages(poller, time.time() + .25)
 
                 if topic == "shutdown":
                     td.stopTurtle()

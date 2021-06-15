@@ -388,7 +388,7 @@ def drive_endpoint():
 	# ZMQ PubSub
 	lr = request.form['lr']
 	ud = request.form['ud']
-	pkt = [ud, lr]
+	pkt = [ud, lr, time.time()]
 	pktName = "motors"
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)

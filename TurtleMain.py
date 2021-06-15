@@ -92,8 +92,8 @@ try:
                         tlast = time.time()
 
                 if topic == "scan":
-                    if pkt[0] != False & time.time() - pkt[2] < .5:
-                        print("Scan Command Latnecy: ",time.time() - pkt[2])
+                    if pkt[0] != False and time.time() - pkt[2] < .5:
+                        print("Scan Command Latnecy: ", time.time() - pkt[2])
                         try:
                             batVolt = td.battery_status()
                             printLidarStatus(battery_voltage=batVolt)
@@ -141,12 +141,12 @@ try:
                                                      LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
                                                      LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"],
                                                      data[0], pkt[1], batVolt)
-
+                            DumpMessages(poller, time.time() + 1)
                             printLidarStatus("Scan Finished...Ready", batVolt)
                             DebugPrint("Scan Finished")
                         else:
+                            DumpMessages(poller, time.time() + 1)
                             printLidarStatus("Scan Failed")
-                        DumpMessages(poller, time.time() + 1)
                         lastscan = time.time()
 
                 if topic == "shutdown":

@@ -92,8 +92,8 @@ try:
                         tlast = time.time()
 
                 if topic == "scan":
-                    if pkt[0] != False:
-                        print(time.time() - pkt[2])
+                    if pkt[0] != False & time.time() - pkt[2] < .5:
+                        print("Scan Command Latnecy: ",time.time() - pkt[2])
                         try:
                             batVolt = td.battery_status()
                             printLidarStatus(battery_voltage=batVolt)

@@ -93,6 +93,7 @@ try:
 
                 if topic == "scan":
                     if pkt[0] != False:
+                        print(time.time() - pkt[2])
                         try:
                             batVolt = td.battery_status()
                             printLidarStatus(battery_voltage=batVolt)

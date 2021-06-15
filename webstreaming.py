@@ -361,7 +361,7 @@ def scan_endpoint():
 	# 	print("No Image...")
 
 	pktName = "scan"
-	pkt = ("True", str_encode)
+	pkt = ("True", str_encode, time.time())
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)
 

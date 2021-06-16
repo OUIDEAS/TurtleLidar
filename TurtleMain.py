@@ -26,8 +26,8 @@ port = "5001"
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
 
-socket.setsockopt(zmq.SNDHWM, 10)
-socket.setsockopt(zmq.SNDBUF, 10 * 1024)
+socket.setsockopt(zmq.SNDHWM, 2)
+socket.setsockopt(zmq.SNDBUF, 2 * 1024)
 
 socket.bind(f"tcp://{host}:{port}")
 time.sleep(1)

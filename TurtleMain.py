@@ -28,6 +28,7 @@ socket = context.socket(zmq.SUB)
 
 socket.setsockopt(zmq.SNDHWM, 2)
 socket.setsockopt(zmq.SNDBUF, 2 * 1024)
+socket.setsockopt(zmq.CONFLATE, 1)
 
 socket.bind(f"tcp://{host}:{port}")
 time.sleep(1)
@@ -95,7 +96,7 @@ try:
                         tlast = time.time()
                     else:
                         DebugPrint("Old Messages in ZMQ buffer, dumping messages")
-                        DumpMessages(poller, time.time() + .1)
+                        # DumpMessages(poller, time.time() + .1)
 
                 if topic == "scan":
                     if pkt[0] != False and time.time() - pkt[2] < .5:
@@ -156,7 +157,7 @@ try:
                         lastscan = time.time()
                     else:
                         DebugPrint("Old Messages in ZMQ buffer, dumping messages")
-                        DumpMessages(poller, time.time() + .25)
+                        # DumpMessages(poller, time.time() + .25)
 
                 if topic == "shutdown":
                     td.stopTurtle()

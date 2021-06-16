@@ -44,6 +44,9 @@ context = zmq.Context()
 # Sub Socket
 pub = context.socket(zmq.PUB)
 
+pub.setsockopt(zmq.SNDHWM, 10)
+pub.setsockopt(zmq.SNDBUF, 10 * 1024)
+
 pub.connect(f"tcp://{host}:{port}")
 time.sleep(.1)
 #ZMQ

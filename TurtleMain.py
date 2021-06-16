@@ -26,6 +26,9 @@ port = "5001"
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
 
+socket.setsockopt(zmq.SNDHWM, 10)
+socket.setsockopt(zmq.SNDBUF, 10 * 1024)
+
 socket.bind(f"tcp://{host}:{port}")
 time.sleep(1)
 
@@ -83,7 +86,7 @@ try:
             # Wait a quarter second after lidar scans to clear buffer
             if time.time() - lastscan >= .25:
                 if topic == "motors":
-                    if time.time() - pkt[2] < .2:
+                    if time.time() - pkt[2] < .5:
                         if len(motorBuffer) > n:
                             motorBuffer = motorBuffer[-n:]
                             motorBuffer.append([pkt[0], pkt[1]])

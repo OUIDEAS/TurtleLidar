@@ -8,16 +8,22 @@ import utils
 
 def DumpMessages(poller, elapsedExit):
     print("DumpMessages")
+    i = 0
     while time.time() < elapsedExit:
         evts = dict(poller.poll(timeout=1))
         if socket in evts:
             try:
                 topic = socket.recv_string()
                 pkt = socket.recv_pyobj()
-                print("Dumping message")
-            except Exception:
+                # print("Dumping message")
+                i+=1
+            except Exception as e:
                 print("no more messages")
-                return
+                break
+        else:
+            print("no more messages")
+            break
+    print("Dumped ", i, " messages")
 
 DebugPrint("Turtle Main Start...")
 host = "127.0.0.1"
@@ -87,7 +93,7 @@ try:
             # Wait a quarter second after lidar scans to clear buffer
             if time.time() - lastscan >= .25:
                 if topic == "motors":
-                    if time.time() - pkt[2] < .5:
+                    if time.time() - pkt[2] < 1:
                         if len(motorBuffer) > n:
                             motorBuffer = motorBuffer[-n:]
                             motorBuffer.append([pkt[0], pkt[1]])
@@ -148,11 +154,14 @@ try:
                                                      LidarData["AvgR"], LidarData["StdRadius"], LidarData["minR"],
                                                      LidarData["maxR"], LidarData["Xcenter"], LidarData["Ycenter"],
                                                      data[0], pkt[1], batVolt)
-                            DumpMessages(poller, time.time() + 1)
+
+                            printLidarStatus("Cleaning buffer")
+                            DumpMessages(poller, time.time() + 60)
                             printLidarStatus("Scan Finished...Ready", batVolt)
                             DebugPrint("Scan Finished")
                         else:
-                            DumpMessages(poller, time.time() + 2)
+                            printLidarStatus("Cleaning buffer")
+                            DumpMessages(poller, time.time() + 60)
                             printLidarStatus("Scan Failed")
                         lastscan = time.time()
                     else:

@@ -13,7 +13,7 @@ def DumpMessages(poller, elapsedExit):
         if socket in evts:
             try:
                 topic = socket.recv_string()
-                # pkt = socket.recv_pyobj()
+                pkt = socket.recv_pyobj()
                 print("Dumping message")
             except Exception:
                 print("no more messages")

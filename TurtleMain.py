@@ -23,7 +23,7 @@ def DumpMessages(poller, elapsedExit):
         else:
             print("no more messages")
             break
-    print("Dumped ", i, " messages")
+    DebugPrint("Dumped " + str(i) + " messages")
 
 DebugPrint("Turtle Main Start...")
 host = "127.0.0.1"
@@ -93,7 +93,7 @@ try:
             # Wait a quarter second after lidar scans to clear buffer
             if time.time() - lastscan >= .25:
                 if topic == "motors":
-                    if time.time() - pkt[2] < 1:
+                    if time.time() - pkt[2] < .5:
                         if len(motorBuffer) > n:
                             motorBuffer = motorBuffer[-n:]
                             motorBuffer.append([pkt[0], pkt[1]])

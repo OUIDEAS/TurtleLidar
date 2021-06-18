@@ -49,6 +49,8 @@ poller.register(socket, zmq.POLLIN)
 t = time.time()
 tbat = time.time()
 tlast = time.time()
+lastscan = 0
+oldData = 0
 
 motorBuffer = []
 n = 10  # length of buffer
@@ -74,8 +76,6 @@ for i in range(n):
     motorBuffer.append([0, 0])
 
 printLidarStatus("Turtle Ready")
-
-lastscan = 0
 try:
     while True:
         evts = dict(poller.poll(timeout=1))
@@ -100,10 +100,13 @@ try:
                         else:
                             motorBuffer.append([pkt[0], pkt[1]])
                         tlast = time.time()
+                        oldData = 0
+                    elif oldData <= 3:
+                        oldData += 1
                     else:
                         DebugPrint("Old Messages in ZMQ buffer, dumping messages")
-                        DumpMessages(poller, time.time() + .05)
-
+                        DumpMessages(poller, time.time() + .5)
+                        oldData = 0
                 if topic == "scan":
                     if pkt[0] != False and time.time() - pkt[2] < .5:
                         print("Scan Command Latnecy: ", time.time() - pkt[2])

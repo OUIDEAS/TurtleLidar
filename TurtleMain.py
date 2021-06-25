@@ -33,7 +33,7 @@ def zmqRead(queuelist):
     pkt = []
 
     while True:
-        evts = dict(poller.poll(timeout=1))
+        evts = dict(poller.poll(timeout=100))
 
         if socket in evts:
             try:
@@ -71,7 +71,7 @@ lastscan = 0
 oldData = 0
 
 motorBuffer = []
-n = 10  # length of buffer
+n = 5  # length of buffer
 
 td = TurtleDriver()
 

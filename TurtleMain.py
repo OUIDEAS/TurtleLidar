@@ -99,7 +99,6 @@ try:
     ZMQ_thread.start()
     printLidarStatus("Turtle Ready")
     while True:
-        # Wait a quarter second after lidar scans to clear buffer
         if not QueueList["motors"].empty():
             pkt = QueueList["motors"].get()
             if time.time() - pkt[2] < .5:
@@ -109,13 +108,13 @@ try:
                 else:
                     motorBuffer.append([pkt[0], pkt[1]])
                 tlast = time.time()
-                oldData = 0
-            elif oldData <= 3:
-                oldData += 1
-            else:
-                DebugPrint("Old Messages in ZMQ buffer, dumping messages")
-                # DumpMessages(poller, time.time() + .5)
-                oldData = 0
+            #     oldData = 0
+            # elif oldData <= 3:
+            #     oldData += 1
+            # else:
+            #     DebugPrint("Old Messages in ZMQ buffer, dumping messages")
+            #     # DumpMessages(poller, time.time() + .5)
+            #     oldData = 0
 
         if not QueueList["scan"].empty():
             pkt = QueueList["scan"].get()
@@ -178,9 +177,9 @@ try:
                     # DumpMessages(poller, time.time() + 60)
                     printLidarStatus("Scan Failed")
                 lastscan = time.time()
-            else:
-                DebugPrint("Old Messages in ZMQ buffer, dumping messages")
-                # DumpMessages(poller, time.time() + .25)
+            # else:
+            #     DebugPrint("Old Messages in ZMQ buffer, dumping messages")
+            #     DumpMessages(poller, time.time() + .25)
         # Battery
         if time.time() - tbat >= 10:
             try:
@@ -192,7 +191,7 @@ try:
             tbat = time.time()
 
         # Motors
-        if time.time() - t >= .05:
+        if time.time() - t >= .025:
             # print("Time Elapsed:", time.time()-t)
             t = time.time()
 

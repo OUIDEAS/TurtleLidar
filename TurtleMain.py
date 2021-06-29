@@ -205,6 +205,7 @@ try:
                 # print(motorBuffer)
                 td.drive(float(motorBuffer[0][0]), float(motorBuffer[0][1]))
                 motorBuffer.pop(0)
+        time.sleep(.005)
 
 except Exception as e:
     # print(e)

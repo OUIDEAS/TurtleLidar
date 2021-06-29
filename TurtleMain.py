@@ -60,7 +60,7 @@ def zmqRead(queuelist):
 DebugPrint("Turtle Main Start...")
 
 QueueList = {}
-QueueList["motors"] = Queue(maxsize=10)
+QueueList["motors"] = Queue(maxsize=5)
 QueueList["scan"] = Queue(maxsize=1)
 QueueList["shutdown"] = Queue()
 
@@ -101,7 +101,7 @@ try:
     while True:
         if not QueueList["motors"].empty():
             pkt = QueueList["motors"].get()
-            if time.time() - pkt[2] < .5:
+            if time.time() - pkt[2] < .1:
                 if len(motorBuffer) > n:
                     motorBuffer = motorBuffer[-n:]
                     motorBuffer.append([pkt[0], pkt[1]])

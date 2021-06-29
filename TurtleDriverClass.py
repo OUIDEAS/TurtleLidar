@@ -5,7 +5,7 @@ import numpy as np
 from LidarClass import RPLidarClass
 import time
 import struct
-
+from TurtleLidarDB import printLidarStatus, DebugPrint
 
 class TurtleException(Exception):
     """Basic exception class"""
@@ -172,6 +172,7 @@ class TurtleDriver:
         coord = np.array([0, 0])
         PrevError = np.array([])
 
+        steps = 11
         i = 0
         try:
             with RPLidarClass() as RP:
@@ -187,13 +188,16 @@ class TurtleDriver:
                     if i == 0:
                         coord = np.array([0, 0])
                         i += 1
-                    elif i < 11:
+                    elif i < steps:
                         Error = estimateError(coord)
                         print(Error)
                         coord = np.array([0, 0])
                         PrevError = np.append(PrevError, Error)
                         self.steplidar(3, 4)
                         i += 1
+
+                        strmsg = "Zeroing " + str(round(i/steps, 2)) + "% Complete"
+                        printLidarStatus(strmsg)
                     else:
                         minVal = np.argmin(abs(PrevError))
                         FinalStep = minVal - i + 1

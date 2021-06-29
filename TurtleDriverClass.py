@@ -196,7 +196,7 @@ class TurtleDriver:
                         self.steplidar(3, 4)
                         i += 1
 
-                        strmsg = "Zeroing " + str(round(i/steps, 2)*100) + "% Complete"
+                        strmsg = "Zeroing " + str(round(i/steps*100, 2)) + "% Complete"
                         printLidarStatus(strmsg)
                     else:
                         minVal = np.argmin(abs(PrevError))

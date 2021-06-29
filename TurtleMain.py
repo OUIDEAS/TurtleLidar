@@ -101,7 +101,7 @@ try:
     while True:
         if not QueueList["motors"].empty():
             pkt = QueueList["motors"].get()
-            if time.time() - pkt[2] < .1:
+            if time.time() - pkt[2] < .2:
                 if len(motorBuffer) > n:
                     motorBuffer = motorBuffer[-n:]
                     motorBuffer.append([pkt[0], pkt[1]])
@@ -191,7 +191,7 @@ try:
             tbat = time.time()
 
         # Motors
-        if time.time() - t >= .025:
+        if time.time() - t >= .03:
             # print("Time Elapsed:", time.time()-t)
             t = time.time()
 

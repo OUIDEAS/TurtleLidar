@@ -16,8 +16,8 @@ def zmqRead(queuelist):
     context = zmq.Context()
     socket = context.socket(zmq.SUB)
 
-    socket.setsockopt(zmq.SNDHWM, 2)
-    socket.setsockopt(zmq.SNDBUF, 2 * 1024)
+    # socket.setsockopt(zmq.SNDHWM, 2)
+    # socket.setsockopt(zmq.SNDBUF, 2 * 1024)
     # socket.setsockopt(zmq.CONFLATE, 1)
 
     socket.bind(f"tcp://{host}:{port}")
@@ -56,6 +56,9 @@ def zmqRead(queuelist):
         if not queuelist["shutdown"].empty():
             break
 
+        topic = ""
+        pkt = []
+
 
 DebugPrint("Turtle Main Start...")
 
@@ -67,8 +70,7 @@ QueueList["shutdown"] = Queue()
 t = time.time()
 tbat = time.time()
 tlast = time.time()
-lastscan = 0
-oldData = 0
+# oldData = 0
 
 motorBuffer = []
 n = 5  # length of buffer
@@ -101,7 +103,7 @@ try:
     while True:
         if not QueueList["motors"].empty():
             pkt = QueueList["motors"].get()
-            if time.time() - pkt[2] < .2:
+            if time.time() - pkt[2] < .1:
                 if len(motorBuffer) > n:
                     motorBuffer = motorBuffer[-n:]
                     motorBuffer.append([pkt[0], pkt[1]])
@@ -176,7 +178,6 @@ try:
                     # printLidarStatus("Cleaning buffer")
                     # DumpMessages(poller, time.time() + 60)
                     printLidarStatus("Scan Failed")
-                lastscan = time.time()
             # else:
             #     DebugPrint("Old Messages in ZMQ buffer, dumping messages")
             #     DumpMessages(poller, time.time() + .25)

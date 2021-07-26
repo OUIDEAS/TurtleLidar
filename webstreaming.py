@@ -19,15 +19,65 @@ import json
 import LidarPlot
 import io
 import os
-import bjoern
+#import bjoern
 from contextlib import contextmanager
-
+LOCK_TIMEOUT = 5
 @contextmanager
-def acquire_timeout(lock, timeout):
+def acquire_timeout(lock, timeout=LOCK_TIMEOUT):
     result = lock.acquire(timeout=timeout)
     yield result
     if result:
         lock.release()
+
+def CameraThreadFunc():
+	global	lock, SendFrame
+	camera = cv2.VideoCapture(0)
+	max_temp_exceed = False
+	while True:
+		#time.sleep(1/60)
+		success, frame = camera.read()  # read the camera frame
+		if not success:
+			break
+		else:
+			piTemp = getPiTemp()
+
+			if((piTemp and piTemp < 60.0) and max_temp_exceed):
+				max_temp_exceed = False
+				DebugPrint("GenFrame: Temp lowered, camera processing back " + str(piTemp))
+
+			if ((piTemp and piTemp > 70.0) or max_temp_exceed):
+				DebugPrint("GenFrame: CPU is too HOT! " + str(piTemp))
+				time.sleep(5)
+				SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
+				img_loc = os.path.join(SITE_ROOT, "static/img", "TooHot.png")
+				frame = cv2.imread(img_loc)
+				max_temp_exceed = True
+				#stop motors?
+				#continue
+			else:
+				#DebugPrint("GenFrame: CPU OK " + str(piTemp))
+				frame = imutils.resize(frame, width=480)
+
+			# grab the current timestamp and draw it on the frame
+			timestamp = datetime.datetime.now()
+			cv2.putText(frame, timestamp.strftime(
+				"%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 1)
+
+			ret, buffer = cv2.imencode('.jpg', frame)
+
+
+			frame = buffer.tobytes()
+			#with lock:
+			with acquire_timeout(lock) as acquired:
+				if acquired:
+					SendFrame = frame
+					#DebugPrint("GOT lock on frame, camera thread")
+
+				else:
+					DebugPrint("Failed to get lock on frame, camera thread")
+			#yield (b'--frame\r\n'
+			#	   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
@@ -213,61 +263,18 @@ def plot():
 					 mimetype='image/png')
 
 
-def CameraThreadFunc():
-	global lock, SendFrame
-	camera = cv2.VideoCapture(0)
-	max_temp_exceed = False
-	while True:
-		success, frame = camera.read()  # read the camera frame
-		if not success:
-			break
-		else:
-			piTemp = getPiTemp()
 
-			if((piTemp and piTemp < 60.0) and max_temp_exceed):
-				max_temp_exceed = False
-				DebugPrint("GenFrame: Temp lowered, camera processing back " + str(piTemp))
-
-			if ((piTemp and piTemp > 70.0) or max_temp_exceed):
-				DebugPrint("GenFrame: CPU is too HOT! " + str(piTemp))
-				time.sleep(5)
-				SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
-				img_loc = os.path.join(SITE_ROOT, "static/img", "TooHot.png")
-				frame = cv2.imread(img_loc)
-				max_temp_exceed = True
-				#stop motors?
-				#continue
-			else:
-				#DebugPrint("GenFrame: CPU OK " + str(piTemp))
-				frame = imutils.resize(frame, width=480)
-
-			# grab the current timestamp and draw it on the frame
-			timestamp = datetime.datetime.now()
-			cv2.putText(frame, timestamp.strftime(
-				"%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10),
-						cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 1)
-
-			ret, buffer = cv2.imencode('.jpg', frame)
-
-
-			frame = buffer.tobytes()
-			#with lock:
-			with acquire_timeout(lock, 2) as acquired:
-				if acquired:
-					SendFrame = frame
-				else:
-					DebugPrint("Failed to get lock on frame, camera thread")
-			#yield (b'--frame\r\n'
-			#	   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
 def gen_frames():
 	global lock, SendFrame
-	with acquire_timeout(lock, 2) as acquired:
-		if acquired:
-			yield (b'--frame\r\n'
-					b'Content-Type: image/jpeg\r\n\r\n' + SendFrame + b'\r\n')
-		else:
-			DebugPrint("Failed to get lock on frame, get frame")
-		
+	while True:
+		with acquire_timeout(lock) as acquired:
+			if acquired:
+				#DebugPrint("GOT lock on frame, gen_frames")
+				dataFrame = b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + SendFrame + b'\r\n'
+			else:
+				DebugPrint("Failed to get lock on frame, get frame")
+		yield (dataFrame)
+		time.sleep(1/30)
 
 @app.route('/video_feed')
 def video_feed():
@@ -380,7 +387,7 @@ def scan_endpoint():
 	# if SendFrame != None:
 	#with lock:  # Unsure if this is needed?
 	str_encode = None
-	with acquire_timeout(lock, 2) as acquired:
+	with acquire_timeout(lock) as acquired:
 		if acquired and SendFrame is not None:
 			Image = SendFrame
 			#Image = cv2.imencode('.jpg', Image)[1]
@@ -446,10 +453,10 @@ if __name__ == '__main__':
 	# app.run(host=args["ip"], port=args["port"], debug=True,
 	# 	threaded=True, use_reloader=False)
 
-	# app.run(host="0.0.0.0", port="5555", debug=False,
-	# 		threaded=True, use_reloader=False)
+	app.run(host="0.0.0.0", port="5555", debug=False,
+	 		threaded=True, use_reloader=False)
 
-	bjoern.run(app, "0.0.0.0", 5555)
+	#bjoern.run(app, "0.0.0.0", 5555)
 
 # release the video stream pointer
 #vs.stop()

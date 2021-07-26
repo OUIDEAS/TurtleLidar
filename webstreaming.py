@@ -381,7 +381,7 @@ def scan_endpoint():
 	#with lock:  # Unsure if this is needed?
 	str_encode = None
 	with acquire_timeout(lock, 2) as acquired:
-    	if acquired and SendFrame is not None:
+		if acquired and SendFrame is not None:
 			Image = SendFrame
 			#Image = cv2.imencode('.jpg', Image)[1]
 			data_encode = np.array(Image)

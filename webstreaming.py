@@ -19,7 +19,7 @@ import json
 import LidarPlot
 import io
 import os
-#import bjoern
+import bjoern
 from contextlib import contextmanager
 LOCK_TIMEOUT = 5
 @contextmanager
@@ -453,10 +453,10 @@ if __name__ == '__main__':
 	# app.run(host=args["ip"], port=args["port"], debug=True,
 	# 	threaded=True, use_reloader=False)
 
-	app.run(host="0.0.0.0", port="5555", debug=False,
-	 		threaded=True, use_reloader=False)
+	#app.run(host="0.0.0.0", port="5555", debug=False,
+	# 		threaded=True, use_reloader=False)
 
-	#bjoern.run(app, "0.0.0.0", 5555)
+	bjoern.run(app, "0.0.0.0", 5555)
 
 # release the video stream pointer
 #vs.stop()

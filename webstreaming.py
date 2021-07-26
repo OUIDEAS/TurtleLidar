@@ -20,7 +20,14 @@ import LidarPlot
 import io
 import os
 import bjoern
+from contextlib import contextmanager
 
+@contextmanager
+def acquire_timeout(lock, timeout):
+    result = lock.acquire(timeout=timeout)
+    yield result
+    if result:
+        lock.release()
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
@@ -52,6 +59,12 @@ time.sleep(.1)
 #ZMQ
 #with TurtleLidarDB() as db:
 #	displayEntries = db.create_debug_table()
+
+
+DebugPrint("Starting web camera processing")
+
+cameraThread = threading.Thread(target=CameraThreadFunc)
+cameraThread.start()
 
 print("Turtle Web server started...")
 DebugPrint("Turtle Web server ready...")
@@ -199,7 +212,8 @@ def plot():
 					 attachment_filename='logo.png',
 					 mimetype='image/png')
 
-def gen_frames():
+
+def CameraThreadFunc():
 	global lock, SendFrame
 	camera = cv2.VideoCapture(0)
 	max_temp_exceed = False
@@ -216,7 +230,7 @@ def gen_frames():
 
 			if ((piTemp and piTemp > 70.0) or max_temp_exceed):
 				DebugPrint("GenFrame: CPU is too HOT! " + str(piTemp))
-				time.sleep(1)
+				time.sleep(5)
 				SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
 				img_loc = os.path.join(SITE_ROOT, "static/img", "TooHot.png")
 				frame = cv2.imread(img_loc)
@@ -237,10 +251,23 @@ def gen_frames():
 
 
 			frame = buffer.tobytes()
-			with lock:
-				SendFrame = frame
+			#with lock:
+			with acquire_timeout(lock, 2) as acquired:
+				if acquired:
+					SendFrame = frame
+				else:
+					DebugPrint("Failed to get lock on frame, camera thread")
+			#yield (b'--frame\r\n'
+			#	   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
+def gen_frames():
+	global lock, SendFrame
+	with acquire_timeout(lock, 2) as acquired:
+		if acquired:
 			yield (b'--frame\r\n'
-				   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
+					b'Content-Type: image/jpeg\r\n\r\n' + SendFrame + b'\r\n')
+		else:
+			DebugPrint("Failed to get lock on frame, get frame")
+		
 
 @app.route('/video_feed')
 def video_feed():
@@ -351,14 +378,16 @@ def scan_endpoint():
 
 	# Grab Image to send to other script
 	# if SendFrame != None:
-	with lock:  # Unsure if this is needed?
-		if SendFrame is not None:
+	#with lock:  # Unsure if this is needed?
+	str_encode = None
+	with acquire_timeout(lock, 2) as acquired:
+    	if acquired and SendFrame is not None:
 			Image = SendFrame
 			#Image = cv2.imencode('.jpg', Image)[1]
 			data_encode = np.array(Image)
 			str_encode = data_encode.tostring()
-		else:
-			str_encode = None
+		elif not acquired:
+			DebugPrint("failed to get lock, scan_endpoint")
 	# else:
 	# 	Image = "null"
 	# 	print("No Image...")

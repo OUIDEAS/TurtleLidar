@@ -1,4 +1,6 @@
 # Byte-compiled / optimized / DLL files
+*.rar
+*.zip
 *.csv
 .idea
 __pycache__/
@@ -165,3 +167,4 @@ dmypy.json
 # Pycharm
 *.idea
 LidarData.db
+save.dat

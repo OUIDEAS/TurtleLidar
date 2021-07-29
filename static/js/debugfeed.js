@@ -1,6 +1,12 @@
 $(document).ready(function() {
     var lastID = -1;
     function checkStatus(){
+        var id = document.getElementById("stopbutton");
+        if(id.innerText.localeCompare("Start Logging") == 0)
+        {
+            setTimeout(checkStatus,500);
+            return;
+        }
         $.ajax({
             type: "POST",
             url: "/debug_feed",
@@ -37,7 +43,7 @@ $(document).ready(function() {
                     console.log("No new debug data");
                 if(document.getElementById('autoscroll').checked)
                     window.scrollTo(0,document.body.scrollHeight);
-                setTimeout(checkStatus,1000);
+                setTimeout(checkStatus,500);
             }
         });
     }

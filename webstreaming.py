@@ -13,13 +13,75 @@ import imutils
 import time
 import cv2
 import zmq
-# import pretty_errors
-from TurtleLidarDB import TurtleLidarDB, DebugPrint
+import sys
+from TurtleLidarDB import TurtleLidarDB, printLidarStatus, DebugPrint, create_csv_zip_bytes, clear_db_by_items, delete_db_by_items, deleteplot_db_by_items
 import json
+import LidarPlot
+import io
+import os
+import bjoern
+from contextlib import contextmanager
+LOCK_TIMEOUT = 5
+@contextmanager
+def acquire_timeout(lock, timeout=LOCK_TIMEOUT):
+    result = lock.acquire(timeout=timeout)
+    yield result
+    if result:
+        lock.release()
+
+def CameraThreadFunc():
+	global	lock, SendFrame
+	camera = cv2.VideoCapture(0)
+	max_temp_exceed = False
+	while True:
+		#time.sleep(1/60)
+		success, frame = camera.read()  # read the camera frame
+		if not success:
+			break
+		else:
+			piTemp = getPiTemp()
+
+			if((piTemp and piTemp < 60.0) and max_temp_exceed):
+				max_temp_exceed = False
+				DebugPrint("GenFrame: Temp lowered, camera processing back " + str(piTemp))
+
+			if ((piTemp and piTemp > 70.0) or max_temp_exceed):
+				DebugPrint("GenFrame: CPU is too HOT! " + str(piTemp))
+				time.sleep(5)
+				SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
+				img_loc = os.path.join(SITE_ROOT, "static/img", "TooHot.png")
+				frame = cv2.imread(img_loc)
+				max_temp_exceed = True
+				#stop motors?
+				#continue
+			else:
+				#DebugPrint("GenFrame: CPU OK " + str(piTemp))
+				frame = imutils.resize(frame, width=480)
+
+			# grab the current timestamp and draw it on the frame
+			timestamp = datetime.datetime.now()
+			cv2.putText(frame, timestamp.strftime(
+				"%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 1)
+
+			ret, buffer = cv2.imencode('.jpg', frame)
+
+
+			frame = buffer.tobytes()
+			#with lock:
+			with acquire_timeout(lock) as acquired:
+				if acquired:
+					SendFrame = frame
+					#DebugPrint("GOT lock on frame, camera thread")
+
+				else:
+					DebugPrint("Failed to get lock on frame, camera thread")
+			#yield (b'--frame\r\n'
+			#	   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
 # initialize the output frame and a lock used to ensure thread-safe
 # exchanges of the output frames (useful for multiple browsers/tabs
 # are viewing tthe stream)
-outputFrame = None
+# outputFrame = None
 SendFrame = None
 lock = threading.Lock()
 
@@ -28,9 +90,8 @@ app = Flask(__name__)
 
 # initialize the video stream and allow the camera sensor to
 # warmup
-#vs = VideoStream(usePiCamera=1).start()
-vs = VideoStream(src=0).start()
-time.sleep(2.0)
+# vs = VideoStream(src=0).start()
+#time.sleep(2.0)
 
 # ZMQ PubSub
 host = "127.0.0.1"
@@ -40,13 +101,23 @@ context = zmq.Context()
 # Sub Socket
 pub = context.socket(zmq.PUB)
 
+# pub.setsockopt(zmq.SNDHWM, 2)
+# pub.setsockopt(zmq.SNDBUF, 2 * 1024)
+
 pub.connect(f"tcp://{host}:{port}")
 time.sleep(.1)
 #ZMQ
 #with TurtleLidarDB() as db:
 #	displayEntries = db.create_debug_table()
 
-DebugPrint("Web server ready...")
+
+DebugPrint("Starting web camera processing")
+
+cameraThread = threading.Thread(target=CameraThreadFunc)
+cameraThread.start()
+
+print("Turtle Web server started...")
+DebugPrint("Turtle Web server ready...")
 
 @app.route("/")
 def index():
@@ -58,16 +129,80 @@ def index():
 def sensorData():
 	displayEntries = []
 	with TurtleLidarDB() as db:
-		displayEntries = db.get_table_data()
+		displayEntries = db.get_all_lidar_data()
 
 	# return the rendered template
 	return render_template("table.html", displayEntries=displayEntries)
 
-@app.route('/database')
-def downloadFile ():
-	with TurtleLidarDB() as db:
-		memory_file = db.create_csv()
+@app.route('/clearplots', methods=['POST'])
+def deleteplot_item():
+	jsondata = request.get_json(silent=True)
+	#print(jsondata)
+	if(jsondata is None):
+		DebugPrint("Clear plot: Missing selected items in json form")
+		return "error"
+
+	idlist = jsondata['selitems']
+	DebugPrint("web wants to delete plots")
+	for id in idlist:
+		DebugPrint(str(id))
+
+	deleteplot_db_by_items(idlist)
+
+	return Response(status=200)
+
+@app.route('/resetdata', methods=['POST'])
+def resetdata_item():
+	jsondata = request.get_json(silent=True)
+	#print(jsondata)
+	if(jsondata is None):
+		DebugPrint("Missing selected items in json form")
+		return "error"
+
+	idlist = jsondata['selitems']
+	DebugPrint("web wants to remove items")
+	for id in idlist:
+		DebugPrint(str(id))
+
+	delete_db_by_items(idlist)
+	DebugPrint("DebugLog cleared")
+
+	return Response(status=200)
+
+@app.route('/cleardata', methods=['POST'])
+def cleardata_item ():
+	jsondata = request.get_json(silent=True)
+	#print(jsondata)
+	if(jsondata is None):
+		DebugPrint("Missing selected items in json form")
+		return "error"
+
+	idlist = jsondata['selitems']
+	DebugPrint("web wants to remove items")
+	for id in idlist:
+		DebugPrint(str(id))
+
+	clear_db_by_items(idlist)
+
+	return Response(status=200)
+
+
+@app.route('/database', methods=['POST'])
+def downloadFile():
+	jsondata = request.get_json(silent=True)
+	#print(jsondata)
+	if(jsondata is None):
+		DebugPrint("Missing selected items in json form")
+		return "error"
+
+	idlist = jsondata['selitems']
+	DebugPrint("web wants items")
+	for id in idlist:
+		DebugPrint(str(id))
+	memory_file = create_csv_zip_bytes(idlist=idlist)
 	return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
+	# path = 'LidarData.db'
+	# return send_file(path, as_attachment=True)
 
 @app.route("/debug")
 def debug():
@@ -75,65 +210,115 @@ def debug():
 	DebugPrint("Flask: debug requested")
 	return render_template("debug.html")
 
-def video_stream(frameCount):
-	# grab global references to the video stream, output frame, and
-	# lock variables
-	global vs, outputFrame, lock, SendFrame
+@app.route("/camerapic/<int:dataid>")
+def getcamerapic(dataid):
+	print("requested image from data %s" % dataid, file=sys.stdout)
+	with TurtleLidarDB() as db:
+		ldata = db.get_lidar_data_byID(dataid)
+	simage = ldata["image"]
+	return send_file(io.BytesIO(simage),
+					attachment_filename = 'logo.png',
+					mimetype='image/png')
 
-	# # initialize the motion detector and the total number of frames
-	# # read thus far
-	# md = SingleMotionDetector(accumWeight=0.1)
-	# total = 0
+@app.route("/polarplot/<int:dataid>")
+def getdataplotpic(dataid):
+	print("requested plot from data %s" % dataid, file=sys.stderr)
+	pimage = None
 
-	# loop over frames from the video stream
+	with TurtleLidarDB() as db:
+		pimage, lsq_data = db.get_polarplot_by_lidarID(dataid)
+
+	if(pimage is None):
+		data = None
+		with TurtleLidarDB() as db:
+			data = db.get_lidar_data_byID(dataid)
+		if(not data):
+			return "error getting data"
+		pimage, lsq_data = LidarPlot.GenerateDataPolarPlotByData(data)
+		if(pimage):
+			with TurtleLidarDB() as db:
+				db.insert_polarplot(pimage, dataid, lsq_data)
+	#image_binary = LidarPlot.GiveTestImg()
+	# response = make_response(image_binary)
+	# response.headers.set('Content-Type', 'image/png')
+	# response.headers.set(
+	# 	'Content-Disposition', 'attachment', filename='plot.png')
+	# return response
+	return send_file(pimage,
+					 attachment_filename='logo.png',
+					 mimetype='image/png')
+	#return 'data %s' % dataid
+
+
+@app.route("/plot")
+def plot():
+	image_binary = LidarPlot.GiveTestImg()
+	# response = make_response(image_binary)
+	# response.headers.set('Content-Type', 'image/png')
+	# response.headers.set(
+	# 	'Content-Disposition', 'attachment', filename='plot.png')
+	# return response
+	return send_file(image_binary,
+					 attachment_filename='logo.png',
+					 mimetype='image/png')
+
+
+
+def gen_frames():
+	global lock, SendFrame
 	while True:
-		# read the next frame from the video stream, resize it
-		frame = vs.read()
-		frame = imutils.resize(frame, width=480)
+		with acquire_timeout(lock) as acquired:
+			if acquired:
+				#DebugPrint("GOT lock on frame, gen_frames")
+				dataFrame = b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + SendFrame + b'\r\n'
+			else:
+				DebugPrint("Failed to get lock on frame, get frame")
+		yield (dataFrame)
+		time.sleep(1/30)
 
-		# grab the current timestamp and draw it on the frame
-		timestamp = datetime.datetime.now()
-		cv2.putText(frame, timestamp.strftime(
-			"%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 255, 0), 1)
-			# cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 0), 1)
+@app.route('/video_feed')
+def video_feed():
+	return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-		# lock
-		with lock:
-			outputFrame = frame.copy()
-			SendFrame = frame
-		
-def generate():
-	# grab global references to the output frame and lock variables
-	global outputFrame, lock
+def getPiTemp():
+	try:
+		tFile = open('/sys/class/thermal/thermal_zone0/temp')
+		temp = float(tFile.read())
+		tempC = temp / 1000.0
+	except:
+		tempC = None
 
-	# loop over frames from the output stream
-	while True:
-		# wait until the lock is acquired
-		with lock:
-			# check if the output frame is available, otherwise skip
-			# the iteration of the loop
-			if outputFrame is None:
-				continue
-
-			# encode the frame in JPEG format
-			(flag, encodedImage) = cv2.imencode(".jpg", outputFrame)
-
-			# ensure the frame was successfully encoded
-			if not flag:
-				continue
-
-		# yield the output frame in the byte format
-		yield(b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + 
-			bytearray(encodedImage) + b'\r\n')
+	#print(tempC)
+	return tempC
 
 @app.route("/scan_status")
 def scan_status():
+	# printLidarStatus()
+	# printLidarStatus("hello0")
+	# printLidarStatus(msg="hello1")
+	# printLidarStatus(battery_voltage=1200.25)
+	# printLidarStatus(msg="hello2", battery_voltage=1200.25)
+	# printLidarStatus("hello4", battery_voltage=1200.25)
+	# printLidarStatus("hello5", 1200.25)
+	# printLidarStatus(64) #do not use, will update string message!
+	tempC = getPiTemp()
+	if(tempC is None):
+		tempC = "N/A"
+	DebugPrint("Check: CPU Temp " + str(tempC))
+
 	message = "Error with LidarStatus database"
-	with TurtleLidarDB() as db:
-		message = str(db.get_lidar_status())
+	fbattery_voltage = -1
+	try:
+		with TurtleLidarDB() as db:
+			message, fbattery_voltage = db.get_lidar_status()
+	except Exception as e:
+		print(e)
 	#print(message)
-	return message, 200
+	return jsonify(
+		status_text=message,
+		battery_voltage=fbattery_voltage,
+		cpu_temp=tempC
+	)
 
 @app.route("/debug_feed", methods=['GET', 'POST'])
 def debug_feed():
@@ -172,11 +357,11 @@ def debug_feed():
 	# DebugPrint("Bye " + str(time.time()))
 	return data
 
-@app.route("/video_feed")
-def video_feed():
-	# return the response generated along with the specific media
-	return Response(generate(),
-		mimetype = "multipart/x-mixed-replace; boundary=frame")
+# @app.route("/video_feed")
+# def video_feed_old():
+# 	# return the response generated along with the specific media
+# 	return Response(generate(),
+# 		mimetype = "multipart/x-mixed-replace; boundary=frame")
 
 # a-button api endpoint
 @app.route('/api/scan', methods=['POST'])
@@ -200,20 +385,22 @@ def scan_endpoint():
 
 	# Grab Image to send to other script
 	# if SendFrame != None:
-	with lock:  # Unsure if this is needed?
-		if SendFrame is not None:
+	#with lock:  # Unsure if this is needed?
+	str_encode = None
+	with acquire_timeout(lock) as acquired:
+		if acquired and SendFrame is not None:
 			Image = SendFrame
-			Image = cv2.imencode('.png', Image)[1]
+			#Image = cv2.imencode('.jpg', Image)[1]
 			data_encode = np.array(Image)
 			str_encode = data_encode.tostring()
-		else:
-			str_encode = None
+		elif not acquired:
+			DebugPrint("failed to get lock, scan_endpoint")
 	# else:
 	# 	Image = "null"
 	# 	print("No Image...")
 
 	pktName = "scan"
-	pkt = ("True", str_encode)
+	pkt = ("True", str_encode, time.time())
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)
 
@@ -240,7 +427,7 @@ def drive_endpoint():
 	# ZMQ PubSub
 	lr = request.form['lr']
 	ud = request.form['ud']
-	pkt = [ud, lr]
+	pkt = [ud, lr, time.time()]
 	pktName = "motors"
 	pub.send_string(pktName, flags=zmq.SNDMORE)
 	pub.send_pyobj(pkt)
@@ -250,27 +437,26 @@ def drive_endpoint():
 
 # check to see if this is the main thread of execution
 if __name__ == '__main__':
-	# construct the argument parser and parse command line arguments
-	ap = argparse.ArgumentParser()
-	# ap.add_argument("-i", "--ip", type=str, required=True,
-	# 	help="ip address of the device")
-	# ap.add_argument("-o", "--port", type=int, required=True,
-	# 	help="ephemeral port number of the server (1024 to 65535)")
-	ap.add_argument("-f", "--frame-count", type=int, default=32,
-		help="# of frames used to construct the background model")
-	args = vars(ap.parse_args())
-
-	# start a thread that will perform motion detection
-	t = threading.Thread(target=video_stream, args=(
-		args["frame_count"],))
-	t.daemon = True
-	t.start()
-
+	# # construct the argument parser and parse command line arguments
+	# ap = argparse.ArgumentParser()
+	#
+	# ap.add_argument("-f", "--frame-count", type=int, default=32,
+	# 	help="# of frames used to construct the background model")
+	# args = vars(ap.parse_args())
+	#
+	# # start a thread that will perform motion detection
+	# t = threading.Thread(target=video_stream, args=(
+	# 	args["frame_count"],))
+	# t.daemon = True
+	# t.start()
 	# start the flask app
 	# app.run(host=args["ip"], port=args["port"], debug=True,
 	# 	threaded=True, use_reloader=False)
 
-	app.run(host="0.0.0.0", port="5555", debug=True,
-			threaded=True, use_reloader=False)
+	#app.run(host="0.0.0.0", port="5555", debug=False,
+	# 		threaded=True, use_reloader=False)
+
+	bjoern.run(app, "0.0.0.0", 5555)
+
 # release the video stream pointer
-vs.stop()
+#vs.stop()

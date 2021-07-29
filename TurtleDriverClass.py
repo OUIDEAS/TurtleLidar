@@ -2,17 +2,17 @@ from serial_comm import SerialComm
 from utils import power_to_motor_payload, reset_STM, servo_angle_to_duty, estimateError
 import frame
 import numpy as np
-from RP_LIDAR import RPLidar, RPLidarException
+from LidarClass import RPLidarClass
 import time
 import struct
-
+from TurtleLidarDB import printLidarStatus, DebugPrint
 
 class TurtleException(Exception):
     """Basic exception class"""
 
 
 class TurtleDriver:
-    def __init__(self, SerialPortName="/dev/serial0", LidarPortName='/dev/ttyUSB1',
+    def __init__(self, SerialPortName="/dev/ttyAMA0",
                  min_ang=-90, max_ang=90, min_duty=2400, max_duty=4800):
 
         # Turtle Shield
@@ -34,15 +34,9 @@ class TurtleDriver:
         self.DEG2RAD = np.pi / 180
         self.MM2INCH = 1 / 25.4
 
-        self.lidar = RPLidar(LidarPortName, 256000)  # Baud rate must be 256000 for RPlidar S1
-
     def initServo(self):
         self.servo_angle = 0
-        self.set_servo(3, self.servo_angle - 20)
-
-    def shutdownLidar(self):
-        self.lidar.stop_motor()
-        self.lidar.disconnect()
+        self.set_servo(3, self.servo_angle + 5)
 
     def set_motors(self, msg):
         if len(msg) < 4:
@@ -171,75 +165,55 @@ class TurtleDriver:
     def zeroLidar(self):
         self.initServo()
         time.sleep(1)
-        self.steplidar(3, -30)
+        self.steplidar(3, -20)
 
         print("Zeroing Lidar")
 
         coord = np.array([0, 0])
         PrevError = np.array([])
 
+        steps = 11
         i = 0
-        t1 = time.time()
         try:
-            for scan in self.lidar.iter_measures(max_buf_meas=0):
-                if scan[3] != 0:
-                    theta = scan[2] * self.DEG2RAD
-                    R = scan[3] * self.MM2INCH
-                    X_lidar = R * np.cos(theta)
-                    Y_lidar = R * np.sin(theta)
-                    coord = np.vstack((coord, [X_lidar, Y_lidar]))
+            with RPLidarClass() as RP:
+                while True:
+                    scan = RP.get_lidar_data(5)
+                    for j in range(len(scan[0])):
+                        theta = scan[0][j]
+                        R = scan[1][j] * self.MM2INCH
+                        X_lidar = R * np.cos(theta)
+                        Y_lidar = R * np.sin(theta)
+                        coord = np.vstack((coord, [X_lidar, Y_lidar]))
 
-                if time.time() - t1 > 5:
                     if i == 0:
                         coord = np.array([0, 0])
                         i += 1
-                        t1 = time.time()
-                    elif i < 11:
+                    elif i < steps:
                         Error = estimateError(coord)
                         print(Error)
                         coord = np.array([0, 0])
                         PrevError = np.append(PrevError, Error)
-                        self.steplidar(3, 2)
+                        self.steplidar(3, 4)
                         i += 1
-                        t1 = time.time()
+
+                        strmsg = "Zeroing " + str(round(i/steps*100, 0)) + "% Complete"
+                        printLidarStatus(strmsg)
                     else:
                         minVal = np.argmin(abs(PrevError))
                         FinalStep = minVal - i + 1
                         print(FinalStep)
-                        self.steplidar(3, FinalStep*2)
+                        self.steplidar(3, FinalStep*4)
                         print("Lidar Zeroed")
                         break
-        except RPLidarException as e:
+
+        except Exception as e:
             print("Stopping due to error:", e)
         except KeyboardInterrupt:
             print('Stopping due to keyboard interrupt')
 
-        self.lidar.stop()
         time.sleep(.5)
 
-    def lidarScanWrite(self, path='lidarScan.txt', scanLength=5, tries=100):
-        outfile = open(path, 'w')
-        t1 = time.time()
-        warmup = 5
-
-        try:
-            for measurment in self.lidar.iter_measures():
-                if time.time() - t1 >= warmup:
-                    if measurment[3] != 0:
-                        line = '\t'.join(str(v) for v in measurment)
-                        outfile.write(line + '\n')
-                if time.time() - t1 > scanLength:
-                    break
-        except RPLidarException as e:
-            print("Stopping due to:", e)
-        except KeyboardInterrupt:
-            print("Keyboard Interrupt detected")
-
-        outfile.close()
-        self.lidar.stop()
-        time.sleep(.5)
-
-    def lidarScan(self, scanLength=5, tries=100):
+    def lidarScan(self, scanLength=5):
         # Inputs:
         #        scanLength: length of time in seconds that the scan will take, default is 5 seconds
         #        tries: number of tries for successful lidar scan, default is 100
@@ -247,27 +221,12 @@ class TurtleDriver:
         #        ang: list of angles that lidar scanned at
         #        dis: list of distances that lidar scanned at
 
-        # self.zeroLidar(24)  # Need to find pipe Diameter
-        # time.sleep(1)
+        with RPLidarClass() as RP:
+            data = RP.get_lidar_data(scanLength)
 
-        ang = []
-        dis = []
+        ang = data[0]
+        dis = data[1]
 
-        warmup = 5
-        t1 = time.time()
-        try:
-            print('Recording measurments... Press Crl+C to stop.')
-            for data in self.lidar.iter_measures(scan_type='normal', max_buf_meas=False):
-                # line = '\t'.join(str(v) for v in measurment)
-                if time.time() - t1 >= warmup:
-                    if data[3] != 0:
-                        ang.append(data[2])
-                        dis.append(data[3])
-                if time.time() - t1 >= scanLength+warmup:
-                    break
-        except KeyboardInterrupt:
-            print('Stoping.')
-        self.lidar.stop()
         time.sleep(.5)
         return ang, dis
 
@@ -276,9 +235,10 @@ if __name__ == "__main__":
 
     print("Turtle Rover Motor Test")
     td = TurtleDriver()
+    print(td.publish_firmware_ver())
+    time.sleep(1)
     print(td.battery_status())
-    time.sleep(5)
+    # time.sleep(5)
     td.zeroLidar()
     time.sleep(1)
-    td.shutdownLidar()
     print("done")

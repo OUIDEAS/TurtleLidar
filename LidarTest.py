@@ -1,17 +1,18 @@
-from RP_LIDAR import RPLidar, RPLidarException
 import time
 from TurtleLidarDB import TurtleLidarDB
 from miscFunctions import find_center
 import numpy as np
 import serial
 import re
-# import cv2
-# import imutils
-# from imutils.video import VideoStream
-# from TurtleDriverClass import TurtleDriver
+import cv2
+import imutils
+from imutils.video import VideoStream
+from TurtleDriverClass import TurtleDriver
+from LidarClass import RPLidarClass
 
-# PORT_NAME = 'COM7'
-PORT_NAME = '/dev/ttyUSB1'
+
+#PORT_NAME = 'COM4'
+PORT_NAME = '/dev/ttyUSB0'
 print("PORT: " + PORT_NAME)
 def doRead(ser):
     tout = 1
@@ -27,37 +28,10 @@ def doRead(ser):
 
 def run():
     '''Main function'''
-    lidar = RPLidar(PORT_NAME, 256000)
-    t = time.time()
-
-    ang = []
-    dis = []
-    for i in range(10):
-        try:
-            print('Recording measurments... Press Crl+C to stop.')
-            for measurment in lidar.iter_measures():
-                # line = '\t'.join(str(v) for v in measurment)
-                if time.time() - t >= 5:
-                    if measurment[3] != 0:
-                        ang.append(measurment[2])
-                        dis.append(measurment[3])
-                if time.time() - t >= 10:
-                    break
-        except KeyboardInterrupt:
-            print('Stoping.')
-        except RPLidarException as e:
-            print(e)
-            continue
-        except Exception as e:
-            print(e)
-        finally:
-            break
-    lidar.stop()
-    lidar.stop_motor()
-    lidar.disconnect()
-
-    X = (ang, dis)
-
+    with RPLidarClass() as RP:
+        print("getting data")
+        X = RP.get_lidar_data(5)
+    # X = (ang, dis)
     return X
 
 
@@ -74,40 +48,47 @@ if __name__ == '__main__':
     data = ["no"]
     # ser = serial.Serial('COM10', 115200)
     # ser = serial.Serial('/dev/ttyACM0', 115200)
-    print("Read Serial")
-    ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
-    t1 = time.time()
-    print("reading")
-    while data[0] != "data":
-        read_serial = ser.readline()
-        # read_serial = doRead(ser)
-        # read_serial = b'no'
-        data = read_serial.decode('utf-8')
-        data = re.sub(r'[()]', '', data)
-        data = data.split(", ")
-        if data[0] == "data":
-            euler = (float(data[1]), float(data[2]), float(data[3]))
-            gyro = (float(data[4]), float(data[5]), float(data[6]))
-            acc = (float(data[7]), float(data[8]), float(data[9]))
-            mag = (float(data[10]), float(data[11]), float(data[12]))
-            enc = (float(data[13]), float(data[14]), float(data[15]), float(data[16]))
-            gdata = (euler, gyro, acc, mag)
-        elif time.time() - t1 >= 5:
-            gdata = ((0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0))
-            enc = (0, 0, 0, 0)
-            break
+    # print("Read Serial")
+    # ser = serial.Serial('/dev/ttyUSB0', 115200, timeout=1)
+    # t1 = time.time()
+    # print("reading")
+    # while data[0] != "data":
+    #     read_serial = ser.readline()
+    #     # read_serial = doRead(ser)
+    #     # read_serial = b'no'
+    #     data = read_serial.decode('utf-8')
+    #     data = re.sub(r'[()]', '', data)
+    #     data = data.split(", ")
+    #     if data[0] == "data":
+    #         euler = (float(data[1]), float(data[2]), float(data[3]))
+    #         gyro = (float(data[4]), float(data[5]), float(data[6]))
+    #         acc = (float(data[7]), float(data[8]), float(data[9]))
+    #         mag = (float(data[10]), float(data[11]), float(data[12]))
+    #         enc = (float(data[13]), float(data[14]), float(data[15]), float(data[16]))
+    #         gdata = (euler, gyro, acc, mag)
+    #     elif time.time() - t1 >= 5:
+    #         gdata = ((0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0))
+    #         enc = (0, 0, 0, 0)
+    #         break
+
+    euler = (0, 0, 0)
+    gyro = (0, 0, 0)
+    acc = (0, 0, 0)
+    mag = (0, 0, 0)
+    enc = (0, 0, 0, 0)
+    gdata = (euler, gyro, acc, mag)
 
     # Getting image from camera
-    # vs = VideoStream(src=0).start()
-    # frame = vs.read()
-    # frame = imutils.resize(frame, width=600)
-    # Save_Image = frame
-    # Save_Image = cv2.imencode('.png', Save_Image)[1]
-    # data_encode = np.array(Save_Image)
-    # str_encode = data_encode.tostring()
+    vs = VideoStream(src=0).start()
+    frame = vs.read()
+    frame = imutils.resize(frame, width=600)
+    Save_Image = frame
+    Save_Image = cv2.imencode('.png', Save_Image)[1]
+    data_encode = np.array(Save_Image)
+    str_encode = data_encode.tostring()
 
-    str_encode = 'Image'
-
+    # str_encode = 'Image'
+    #
     LidarData = {
         "Lidar": tuple(zip(X[0], X[1])),
         "Time": time.time(),
@@ -120,10 +101,10 @@ if __name__ == '__main__':
         "yCenter": center[1][1]
     }
 
-    batVolt = 6*3.7
+    # batVolt = 6*3.7
 
-    # td = TurtleDriver()
-    # batVolt = td.battery_status()
+    td = TurtleDriver()
+    batVolt = td.battery_status()
     print("Save Data")
     with TurtleLidarDB() as db:
         db.create_lidar_table()
@@ -132,7 +113,7 @@ if __name__ == '__main__':
                                    LidarData["xCenter"], LidarData["yCenter"], gdata, str_encode, batVolt)
 
     print("Time: ", LidarData["Time"])
-    print("Odometer: ", LidarData["odo"])
+    # print("Odometer: ", LidarData["odo"])
     print("AvgR: ",LidarData["AvgR"])
     print("stdR: ",LidarData["StdRadius"])
     print("minR: ",LidarData["minR"])

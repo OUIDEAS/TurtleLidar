@@ -5,7 +5,9 @@ Reuirements:
 
 ONLY FOR WEBSERVER SO FAR:
 
-```sudo pip3 install setuptools pretty_errors imutils numpy opencv-python-headless flask zmq```
+```sudo apt-get install libev-dev```
+
+```sudo pip3 install setuptools lsq-ellipse imutils numpy opencv-python-headless flask zmq bjoern```
 
 
 <!---```sudo pip3 install csv pickle bz2 zipfile sqlite3``` --->

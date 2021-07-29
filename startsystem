@@ -1,0 +1,11 @@
+#!/bin/bash
+source /home/catkin_ws/devel/setup.bash
+set -e
+set -x
+
+cd ~/turtle
+echo "Starting Turtle"
+python3 webstreaming.py &
+# echo "Webserver started"
+python3 TurtleMain.py
+

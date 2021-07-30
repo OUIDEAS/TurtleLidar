@@ -357,7 +357,8 @@ def debug_feed():
 	# DebugPrint("Bye " + str(time.time()))
 	return data
 @app.route("/version")
-   return subprocess.check_output(['git','describe', '--tags', '--abbrev=0'])
+def ver():
+	return subprocess.check_output(['git','describe', '--tags', '--abbrev=0'])
 # @app.route("/video_feed")
 # def video_feed_old():
 # 	# return the response generated along with the specific media

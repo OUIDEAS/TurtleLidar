@@ -19,6 +19,7 @@ import json
 import LidarPlot
 import io
 import os
+import subprocess
 import bjoern
 from contextlib import contextmanager
 LOCK_TIMEOUT = 5
@@ -357,6 +358,7 @@ def debug_feed():
 	# DebugPrint("Bye " + str(time.time()))
 	return data
 @app.route("/version")
+def retVersion():
    return subprocess.check_output(['git','describe', '--tags', '--abbrev=0'])
 # @app.route("/video_feed")
 # def video_feed_old():

@@ -20,6 +20,9 @@ import LidarPlot
 import io
 import os
 import bjoern
+import subprocess
+
+
 from contextlib import contextmanager
 LOCK_TIMEOUT = 5
 @contextmanager

@@ -281,7 +281,7 @@
                                 </a>
                             </li>-->
                             <li>
-                                <a href="debug" target="_blank">Debug
+                                <a href="/debug" target="_blank">Debug
                                 </a>
                             </li>
                         </ul>
@@ -291,6 +291,7 @@
                                 document.write(new Date().getFullYear())
                             </script>
                             <a href="https://ouideas.github.io/">IDEAS Lab</a>
+                            <a href="/update">Update...</a>
                         </p>
                     </nav>
                 </div>
@@ -315,6 +316,9 @@
 <!--<script src="{{ url_for('static', filename="js/lidarstatus.js")}}"></script>-->
 <script>
     $(document).ready(function() {
+    
+
+    document.getElementById("updatelink").href = "http://"+serverIP+"/update"
     function checkStatus(){
         $.ajax({
             type: "GET",

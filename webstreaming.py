@@ -24,6 +24,9 @@ import subprocess
 
 
 from contextlib import contextmanager
+
+version_json_file = "version.json"
+
 LOCK_TIMEOUT = 5
 @contextmanager
 def acquire_timeout(lock, timeout=LOCK_TIMEOUT):
@@ -359,9 +362,17 @@ def debug_feed():
 	# DebugPrint("Foo " + str(time.time()))
 	# DebugPrint("Bye " + str(time.time()))
 	return data
+@app.route("/update")
+def update():
+	return render_template("update.html")
+
 @app.route("/version")
 def ver():
-	return subprocess.check_output(['git','describe', '--tags', '--abbrev=0'])
+	verdata = json.load(open(version_json_file,))
+	version = verdata['version']
+	# return 'Current version is: ' + version + '></iframe>'
+	return version
+	# return subprocess.check_output(['git','describe', '--tags', '--abbrev=0'])
 # @app.route("/video_feed")
 # def video_feed_old():
 # 	# return the response generated along with the specific media

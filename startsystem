@@ -1,7 +1,7 @@
 #!/bin/bash
 source /home/catkin_ws/devel/setup.bash
 set -x
-
-python3 /home/turtle/webstreaming.py &&
-python3 /home/turtle/TurtleMain.py
+cd /home/turtle/
+python3 webstreaming.py &&
+python3 TurtleMain.py
 

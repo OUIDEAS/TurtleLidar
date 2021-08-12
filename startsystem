@@ -2,6 +2,5 @@
 source /home/catkin_ws/devel/setup.bash
 set -x
 cd /home/turtle/
-python3 webstreaming.py &&
+python3 webstreaming.py &
 python3 TurtleMain.py
-

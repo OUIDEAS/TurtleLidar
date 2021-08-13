@@ -126,7 +126,7 @@
 <script>
     $(document).ready(function() {
         var serverIP = self.location.host
-        serverIP = serverIP.slice(0,serverIP.search(":"))
+        // serverIP = serverIP.slice(0,serverIP.search(":"))
         console.log(serverIP)
         var iframeIP = document.getElementById("updateframe").src
         iframeIP = iframeIP.replace("serverip",serverIP+":1234")

@@ -68,7 +68,7 @@
             
             <div class="content">
                 <div>Current Version:</div><div id="currentVersion">0.0.0</div>
-                <iframe id="updateframe" width="800" height="800" src="http://%SERVERIP%"></iframe>
+                <iframe id="updateframe" width="800" height="800" src="http://SERVERIP"></iframe>
             </div>
             <footer class="footer">
                 <div class="container-fluid">
@@ -117,7 +117,7 @@
         serverIP = serverIP.slice(0,serverIP.search(":"))
         console.log(serverIP)
         var iframeIP = document.getElementById("updateframe").src
-        iframeIP = iframeIP.replace("%SERVERIP%",serverIP+":1234")
+        iframeIP = iframeIP.replace("serverip",serverIP+":1234")
         //serverIP = serverIP.slice(0,serverIP.search(":")+1)+"1234"
         console.log("fix frame:")
         console.log(document.getElementById("updateframe").src)

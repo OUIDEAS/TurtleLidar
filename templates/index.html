@@ -284,6 +284,15 @@
                                 <a href="/debug" target="_blank">Debug
                                 </a>
                             </li>
+                            <li>
+                                <a href="/update" target="_blank">Update Turtle
+                                </a>
+                            </li>
+                            <li>
+                                <a href="https://github.com/OUIDEAS/TurtleLidar">
+                                    Project Repository
+                                </a>
+                            </li>
                         </ul>
                         <p class="copyright text-center">
                             ©
@@ -291,7 +300,7 @@
                                 document.write(new Date().getFullYear())
                             </script>
                             <a href="https://ouideas.github.io/">IDEAS Lab</a>
-                            <a href="/update">Update...</a>
+<!--                            <a href="/update">Update...</a>-->
                         </p>
                     </nav>
                 </div>
@@ -315,10 +324,11 @@
 <script src="{{ url_for('static', filename="js/gamepad.js")}}"></script>
 <!--<script src="{{ url_for('static', filename="js/lidarstatus.js")}}"></script>-->
 <script>
-    $(document).ready(function() {
-    
-
     document.getElementById("updatelink").href = "http://"+serverIP+"/update"
+</script>
+<script>
+    $(document).ready(function() {
+
     function checkStatus(){
         $.ajax({
             type: "GET",

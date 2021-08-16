@@ -91,6 +91,7 @@ def _CameraThreadFunc():
 
 				else:
 					DebugPrint("Failed to get lock on frame, camera thread")
+					camera.release()
 					raise SystemError
 			#yield (b'--frame\r\n'
 			#	   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result

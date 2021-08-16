@@ -51,6 +51,7 @@ def _CameraThreadFunc():
 		#time.sleep(1/60)
 		success, frame = camera.read()  # read the camera frame
 		if not success:
+			camera.release()
 			raise ModuleNotFoundError
 		else:
 			piTemp = getPiTemp()

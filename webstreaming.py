@@ -36,6 +36,14 @@ def acquire_timeout(lock, timeout=LOCK_TIMEOUT):
         lock.release()
 
 def CameraThreadFunc():
+	while True:
+		try:
+			_CameraThreadFunc()
+		except:
+			print("Failure with camera thread, retry")
+			time.sleep(5)
+
+def _CameraThreadFunc():
 	global	lock, SendFrame
 	camera = cv2.VideoCapture(0)
 	max_temp_exceed = False
@@ -43,7 +51,7 @@ def CameraThreadFunc():
 		#time.sleep(1/60)
 		success, frame = camera.read()  # read the camera frame
 		if not success:
-			break
+			raise ModuleNotFoundError
 		else:
 			piTemp = getPiTemp()
 
@@ -82,6 +90,7 @@ def CameraThreadFunc():
 
 				else:
 					DebugPrint("Failed to get lock on frame, camera thread")
+					raise SystemError
 			#yield (b'--frame\r\n'
 			#	   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
 # initialize the output frame and a lock used to ensure thread-safe

@@ -4,7 +4,7 @@
 # import the necessary packages
 # from pyimagesearch.motion_detection import SingleMotionDetector
 from imutils.video import VideoStream
-from flask import Response, Flask, render_template, request, jsonify, send_file
+from flask import Response, Flask, render_template, request, jsonify, send_file, redirect
 import numpy as np
 import threading
 import argparse
@@ -26,6 +26,7 @@ import subprocess
 from contextlib import contextmanager
 
 version_json_file = "version.json"
+CAMERA_RUN = 1
 
 LOCK_TIMEOUT = 5
 @contextmanager
@@ -36,18 +37,26 @@ def acquire_timeout(lock, timeout=LOCK_TIMEOUT):
         lock.release()
 
 def CameraThreadFunc():
+	global CAMERA_RUN
 	while True:
+		if(CAMERA_RUN == 0):
+			DebugPrint("Camera thread f asked to stop")
+			return
 		try:
 			_CameraThreadFunc()
 		except:
-			print("Failure with camera thread, retry")
+			DebugPrint("Failure with camera thread, retry")
 			time.sleep(5)
 
 def _CameraThreadFunc():
-	global	lock, SendFrame
+	global	lock, SendFrame, CAMERA_RUN
 	camera = cv2.VideoCapture(0)
 	max_temp_exceed = False
+	DebugPrint("start camera thread")
 	while True:
+		if(CAMERA_RUN == 0):
+			DebugPrint("Camera thread asked to stop")
+			return
 		#time.sleep(1/60)
 		success, frame = camera.read()  # read the camera frame
 		if not success:
@@ -141,6 +150,20 @@ def index():
 	# return the rendered template
 	DebugPrint("Flask: index requested")
 	return render_template("index.html")
+
+@app.route("/resetcamera")
+def resetcamera():
+	global CAMERA_RUN, cameraThread
+	CAMERA_RUN = 0
+	DebugPrint("camera stopping")
+	time.sleep(6) #max block time from camera is 5
+	cameraThread.join()
+	time.sleep(1)
+	CAMERA_RUN = 1
+	cameraThread = threading.Thread(target=CameraThreadFunc)
+	cameraThread.start()
+	DebugPrint("camera force restart")
+	return redirect("/")
 
 @app.route("/sensor-data")
 def sensorData():

@@ -51,6 +51,7 @@ def CameraThreadFunc():
 def _CameraThreadFunc():
 	global	lock, SendFrame, CAMERA_RUN
 	camera = cv2.VideoCapture(0)
+	camera.set(cv2.CAP_PROP_BUFFERSIZE, 3)
 	max_temp_exceed = False
 	DebugPrint("start camera thread")
 	while True:

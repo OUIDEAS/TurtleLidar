@@ -25,7 +25,6 @@ import subprocess
 from flask_wtf import FlaskForm
 from wtforms.fields.html5 import DateField, TimeField
 from wtforms.fields import SubmitField
-from datetime import datetime
 from changeTime import changeTime
 
 from contextlib import contextmanager
@@ -37,8 +36,8 @@ LOCK_TIMEOUT = 5
 
 
 class TimeForm(FlaskForm):
-    date_posted = DateField('Date', format='%Y-%m-%d', default=datetime.now())
-    time_posted = TimeField('Time', format='%H:%M', default=datetime.now())
+    date_posted = DateField('Date', format='%Y-%m-%d', default=datetime.datetime.now())
+    time_posted = TimeField('Time', format='%H:%M', default=datetime.datetime.now())
     submit = SubmitField('Submit')
 
 

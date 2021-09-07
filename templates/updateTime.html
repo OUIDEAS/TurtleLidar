@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Update Time</title>
+</head>
+<body>
+    <div class="row">
+    <!--    <div class="col-xs-12">-->
+    <!--        <p class="lead"> <b>Date and Time:</b>  </p>-->
+    <!--        {{  form.date_posted() }} {{  form.time_posted() }}-->
+    <!--        <p class="lead">{{  form.submit() }} </p>-->
+    <!--    </div>-->
+        <script type="text/javascript">
+            (function() {
+            var localTime = Date()
+            document.write("<p>Current Time of browser: <br> " + localTime + '</p>');
+                })();
+        </script>
+
+        <form method="POST" action="/timeUpdate">
+            <div> <b>Date and Time:</b> </div>
+            <div>{{  form.date_posted() }} {{  form.time_posted() }}</div>
+            <div>{{  form.submit() }}</div>
+        </form>
+
+    </div>
+</body>
+</html>

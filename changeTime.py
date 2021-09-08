@@ -13,7 +13,7 @@ def is_raspberrypi():
 
 def changeTime(date, time):
     pi = is_raspberrypi()
-    timeCMD = "sudo date --set '" + str(date) + ' ' + str(time) + "'"
+    timeCMD = "date --set '" + str(date) + ' ' + str(time) + "'"
     if pi:
 
         try:

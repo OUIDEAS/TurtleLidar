@@ -22,7 +22,7 @@ def changeTime(date, time):
             print(e)
         print('Time Changed to ', date, '', time)
     else:
-        print("Test")
+        print("Testing with windows")
         print(timeCMD)
 
 

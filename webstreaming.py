@@ -26,6 +26,7 @@ from flask_wtf import FlaskForm
 from wtforms.fields.html5 import DateField, TimeField
 from wtforms.fields import SubmitField
 from changeTime import changeTime
+from dateutil import parser
 
 from contextlib import contextmanager
 
@@ -36,9 +37,15 @@ LOCK_TIMEOUT = 5
 
 
 class TimeForm(FlaskForm):
-    date_posted = DateField('Date', format='%Y-%m-%d', default=datetime.datetime.now())
-    time_posted = TimeField('Time', format='%H:%M', default=datetime.datetime.now())
+    timeNow = datetime.datetime.now()
+    date_posted = DateField('Date', format='%Y-%m-%d', default=timeNow)
+    time_posted = TimeField('Time', format='%H:%M', default=timeNow)
     submit = SubmitField('Submit')
+
+    @classmethod
+    def new(cls, newTime):
+        cls.date_posted = DateField('Date', format='%Y-%m-%d', default=newTime)
+        cls.time_posted = TimeField('Time', format='%H:%M', default=newTime)
 
 
 @contextmanager
@@ -431,14 +438,28 @@ def ver():
 @app.route("/timeUpdate", methods=('GET', 'POST'))
 def get_time_endpoint():
     form = TimeForm(request.form)
+    form.new(datetime.datetime.now())
     if request.method == 'POST':
         print("Time Recieved:")
         DATE = form.date_posted.data
         TIME = form.time_posted.data
+        DebugPrint('Changing Time of Turtle')
         changeTime(DATE, TIME)
         return redirect('/', code=303)
-
     return render_template('updateTime.html', form=form)
+
+
+@app.route("/timeUpdateClient", methods=['GET'])
+def getTime():
+    clientTime = request.args.get("time")
+    temp = parser.parse(clientTime)
+    DATE = datetime.datetime.strftime(temp, '%Y-%m-%d')
+    TIME = datetime.datetime.strftime(temp, '%H:%M:%S')
+    changeTime(DATE, TIME)
+    DebugPrint('Changing Time of Turtle')
+
+    return "Done"
+
 
 # a-button api endpoint
 @app.route('/api/scan', methods=['POST'])

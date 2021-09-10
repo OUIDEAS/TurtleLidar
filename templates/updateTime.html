@@ -70,12 +70,21 @@
                     <script type="text/javascript">
                         (function() {
                         var localTime = Date()
-                        document.write("<p>Current Time of browser: <br> " + localTime + '</p>');
+                        document.write("<p><b> Update Time Using Browser Time: </b> <br> " + localTime + '</p>');
                             })();
                     </script>
+                     <script>
+                        function sendTimeToServer(){
+                        var time = new Date();
+                        var i = document.createElement("img");
+                        i.src = "/timeUpdateClient?time=" + time.toLocaleString();
+                        document.getElementById("time").innerHTML = time;}
+                    </script>
+
+                 <button onclick="sendTimeToServer()">Submit</button>
 
                 <form method="POST" action="/timeUpdate">
-                    <div> <br> <b>Date and Time:</b> <br> </div>
+                    <div> <br> <b>Set Date and Time Manually:</b> <br> </div>
                     <div>{{  form.date_posted() }} {{  form.time_posted() }}</div>
                     <div>{{  form.submit() }}</div>
                 </form>

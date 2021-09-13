@@ -78,7 +78,9 @@
                         var time = new Date();
                         var i = document.createElement("img");
                         i.src = "/timeUpdateClient?time=" + time.toLocaleString();
-                        document.getElementById("time").innerHTML = time;}
+                        // document.getElementById("time").innerHTML = time;
+                        window.location.assign("../");
+                        }
                     </script>
 
                  <button onclick="sendTimeToServer()">Submit</button>

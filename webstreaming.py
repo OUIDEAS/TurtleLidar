@@ -455,9 +455,8 @@ def getTime():
     temp = parser.parse(clientTime)
     DATE = datetime.datetime.strftime(temp, '%Y-%m-%d')
     TIME = datetime.datetime.strftime(temp, '%H:%M:%S')
-    changeTime(DATE, TIME)
     DebugPrint('Changing Time of Turtle')
-
+    changeTime(DATE, TIME)
     return "Done"
 
 

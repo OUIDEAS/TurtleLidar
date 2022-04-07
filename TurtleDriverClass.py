@@ -162,7 +162,7 @@ class TurtleDriver:
 
         self.set_servo(motor, self.servo_angle)
 
-    def zeroLidar(self):
+    def zeroLidar(self, scanLength=5):
         self.initServo()
         time.sleep(1)
         self.steplidar(3, -20)
@@ -174,6 +174,8 @@ class TurtleDriver:
 
         steps = 11
         i = 0
+        ang = []
+        dis = []
         try:
             with RPLidarClass() as RP:
                 while True:
@@ -206,12 +208,20 @@ class TurtleDriver:
                         print("Lidar Zeroed")
                         break
 
+                printLidarStatus("Lidar Zeroed...Scanning...")
+                DebugPrint("Scanning")
+                data = RP.get_lidar_data(scanLength)
+
+                ang = data[0]
+                dis = data[1]
+
         except Exception as e:
             print("Stopping due to error:", e)
         except KeyboardInterrupt:
             print('Stopping due to keyboard interrupt')
 
-        time.sleep(.5)
+        time.sleep(1)
+        return ang, dis
 
     def lidarScan(self, scanLength=5):
         # Inputs:

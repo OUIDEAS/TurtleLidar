@@ -18,7 +18,7 @@ class RPLidarClass:
 
         self.launch = roslaunch.parent.ROSLaunchParent(uuid, [file])
         self.launch.start()
-        time.sleep(5)
+        time.sleep(10)
 
         print("read")
 

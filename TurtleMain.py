@@ -137,11 +137,11 @@ try:
 
                 printLidarStatus("Beginning Zero")
                 DebugPrint("Beginning Zero")
-                td.zeroLidar()
+                scan = td.zeroLidar(5)
 
-                printLidarStatus("Lidar Zeroed...Scanning...")
-                DebugPrint("Scanning")
-                scan = td.lidarScan(5)
+                # printLidarStatus("Lidar Zeroed...Scanning...")
+                # DebugPrint("Scanning")
+                # scan = td.lidarScan(5)
                 printLidarStatus("Processing Data")
 
                 if len(scan[0]) > 1:

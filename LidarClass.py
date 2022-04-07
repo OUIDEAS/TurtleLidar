@@ -18,13 +18,13 @@ class RPLidarClass:
 
         self.launch = roslaunch.parent.ROSLaunchParent(uuid, [file])
         self.launch.start()
-        time.sleep(10)
+        time.sleep(5)
 
         print("read")
 
         rospy.init_node('rplidarNode', anonymous=True)
         self.scan_data_sub = rospy.Subscriber('scan', LaserScan, self.get_scan)
-        rospy.sleep(1)
+        rospy.sleep(6)
         return self
 
     def get_scan(self, LaserScan):

@@ -366,7 +366,7 @@ def scan_status():
     tempC = getPiTemp()
     if(tempC is None):
         tempC = "N/A"
-    DebugPrint("Check: CPU Temp " + str(tempC))
+    # DebugPrint("Check: CPU Temp " + str(tempC))
 
     message = "Error with LidarStatus database"
     fbattery_voltage = -1

@@ -25,7 +25,7 @@ class RPLidarClass:
 
         rospy.init_node('rplidarNode', anonymous=True)
         self.scan_data_sub = rospy.Subscriber('scan', LaserScan, self.get_scan)
-        rospy.sleep(6)
+        rospy.sleep(90)
         return self
 
     def get_scan(self, LaserScan):

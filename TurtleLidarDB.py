@@ -598,7 +598,7 @@ def create_csv_zip_bytes(idlist=None):
         with TurtleLidarDB() as db:
             plot_img, lsq_data = db.get_polarplot_by_lidarID(dataid)
         if plot_img is None:
-            plot_img, lsq_data = LidarPlot.GenerateDataPolarPlotByData(data)
+            plot_img, lsq_data = LidarPlot.GenerateDataPolarPlotByDataAdjusted(data)
             with TurtleLidarDB() as db:
                 db.insert_polarplot(plot_img, dataid, lsq_data=lsq_data)
 
@@ -608,18 +608,22 @@ def create_csv_zip_bytes(idlist=None):
 
         MM_TO_INCH = 0.03937007874
 
-        yfirst = MM_TO_INCH * data["Lidar"][0][1] * np.sin(data["Lidar"][0][0])
-        xfirst = MM_TO_INCH * data["Lidar"][0][1] * np.cos(data["Lidar"][0][0])
-        INCLUDEXY = True
-        if (INCLUDEXY == True):
+        if "Lidar_Data_f" in lsq_data:
+            INCLUDEXY = True
+        else:
+            INCLUDEXY = False
+
+        if INCLUDEXY:
+            yfirst = MM_TO_INCH * lsq_data["Lidar_Data_f"][0][1] * np.sin(lsq_data["Lidar_Data_f"][0][0])
+            xfirst = MM_TO_INCH * lsq_data["Lidar_Data_f"][0][1] * np.cos(lsq_data["Lidar_Data_f"][0][0])
+
             writer.writerow(
-                ['Angle [deg]', 'Range [in]', 'X [in]', 'Y [in]', 'Time', 'AvgR [in]', 'StdR', 'minR [in]', 'maxR [in]',
-                 'Odometer',
-                 'eulerX', 'eulerY', 'eulerZ', 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY',
-                 'magZ',
-                 'BatVolt',
-                 'lsq_center_x [in]', 'lsq_center_y', 'lsq_width [in]', 'lsq_height [in]', 'lsq_phi'])
-            FirstRow = [str(data["Lidar"][0][0]), data["Lidar"][0][1] * MM_TO_INCH, xfirst, yfirst, data['Time'],
+                ['Angle [deg]', 'Range [in]', 'Angle Filtered [deg]', 'Range Filtered [in]', 'X [in]', 'Y [in]', 'Time',
+                 'AvgR [in]', 'StdR', 'minR [in]', 'maxR [in]', 'Odometer', 'eulerX', 'eulerY', 'eulerZ',
+                 'gyroX', 'gyroY', 'gyroZ', 'accX', 'accY', 'accZ', 'magX', 'magY', 'magZ',
+                 'BatVolt', 'lsq_center_x [in]', 'lsq_center_y', 'lsq_width [in]', 'lsq_height [in]', 'lsq_phi'])
+            FirstRow = [str(data["Lidar"][0][0]), data["Lidar"][0][1] * MM_TO_INCH, str(lsq_data["Lidar_Data_f"][0][0]),
+                        lsq_data["Lidar_Data_f"][0][1] * MM_TO_INCH, xfirst, yfirst, data['Time'],
                         data["AvgR"] * MM_TO_INCH, data['StdRadius'] * MM_TO_INCH,
                         data["minR"] * MM_TO_INCH, data['maxR'] * MM_TO_INCH, data["odo"],
                         data["gyro"][0][0], data["gyro"][0][1], data["gyro"][0][2],
@@ -628,15 +632,23 @@ def create_csv_zip_bytes(idlist=None):
                         data["gyro"][3][0], data["gyro"][3][1], data["gyro"][3][2], data["bat"],
                         lsq_data['center'][0] * MM_TO_INCH, lsq_data['center'][1] * MM_TO_INCH,
                         lsq_data['width'] * MM_TO_INCH, lsq_data['height'] * MM_TO_INCH, lsq_data['phi']]
+
             writer.writerow(FirstRow)
-            angles = []
-            ranges = []
-            index = 0
-            for a, r in data["Lidar"]:
-                if index == 0:
-                    index = 1
+
+            f_len = len(lsq_data["Lidar_Data_f"])
+            # for a, r in data["Lidar"]:
+            for idx in range(len(data["Lidar"])):
+                if idx == 0:
                     continue
-                row = [float(a), float(r * MM_TO_INCH), MM_TO_INCH * r * np.sin(a), MM_TO_INCH * r * np.cos(a)]
+                a = data["Lidar"][idx][0]
+                r = data["Lidar"][idx][1]
+                if idx < f_len:
+                    a_adj = lsq_data["Lidar_Data_f"][idx][0]
+                    r_adj = lsq_data["Lidar_Data_f"][idx][1]
+                    row = [float(a), float(r * MM_TO_INCH), float(a_adj), float(r_adj * MM_TO_INCH),
+                           MM_TO_INCH * r_adj * np.cos(a_adj), MM_TO_INCH * r_adj * np.sin(a_adj)]
+                else:
+                    row = [float(a), float(r * MM_TO_INCH)]
                 writer.writerow(row)
         else:
             writer.writerow(
@@ -775,3 +787,5 @@ if __name__ == "__main__":
     with TurtleLidarDB() as db:
         data = db.get_lidar_data_byID(1)
         print(data)
+
+    create_csv_zip_bytes([18])

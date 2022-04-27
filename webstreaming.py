@@ -296,7 +296,7 @@ def getdataplotpic(dataid):
             data = db.get_lidar_data_byID(dataid)
         if(not data):
             return "error getting data"
-        pimage, lsq_data = LidarPlot.GenerateDataPolarPlotByData(data)
+        pimage, lsq_data = LidarPlot.GenerateDataPolarPlotByDataAdjusted(data)
         if(pimage):
             with TurtleLidarDB() as db:
                 db.insert_polarplot(pimage, dataid, lsq_data)

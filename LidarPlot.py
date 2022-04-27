@@ -31,7 +31,7 @@ def GiveTestImg():
     #data = {}
     #data['lidar']= trarray
 
-    return GenerateDataPolarPlotByData(data)
+    return GenerateDataPolarPlotByDataAdjusted(data)
     # fig, ax = plt.subplots()
     # ax.scatter(x,y)
     # ax.grid(True)
@@ -204,6 +204,96 @@ def GenerateDataPolarPlotByData(data):
     buf.seek(0)
     return buf, lsq_data
 
+
+def rolling_window(array, window_size, freq=1):
+    shape = (array.shape[0] - window_size + 1, window_size)
+    strides = (array.strides[0],) + array.strides
+    rolled = np.lib.stride_tricks.as_strided(array, shape=shape, strides=strides)
+    return rolled[np.arange(0,shape[0],freq)]
+
+def hampel_filter_v(input_data, half_win_length, threshold):
+    # based from https://stackoverflow.com/a/71732887
+    padded_data = np.concatenate([[np.nan]*half_win_length, input_data, [np.nan]*half_win_length])
+    # windows = np.ma.array(np.lib.stride_tricks.sliding_window_view(padded_data, 2*half_win_length+1))
+    windows = np.ma.array(rolling_window(padded_data, half_win_length*2+1))
+    windows[np.isnan(windows)] = np.ma.masked
+    median = np.ma.median(windows, axis=1)
+    mad = np.ma.median(np.abs(windows-np.atleast_2d(median).T), axis=1)
+    k = 1.4826
+    bad = np.abs(input_data-median) > (k*mad*threshold)
+    return np.where(bad)[0]
+
+
+def GenerateDataPolarPlotByDataAdjusted(data):
+    #angle, dist pairs
+    ldata = data['Lidar']
+    x = []
+    y = []
+    offset = 90
+    for pair in ldata:
+        ang = np.deg2rad(pair[0])
+        yt = pair[1] * np.sin(ang + np.deg2rad(offset))
+        xt = -pair[1] * np.cos(ang + np.deg2rad(offset))
+        x.append(xt)
+        y.append(yt)
+    coord = np.array(list(zip(x, y)))
+    x = np.array(x)
+    y = np.array(y)
+
+    # Eclipse Fit
+    reg = LsqEllipse().fit(coord)
+    center, width, height, phi = reg.as_parameters()
+    # lsq_data = {'center': center, 'width': width, 'height': height, 'phi': phi}
+
+    MM_TO_INCH = 1/25.4
+    x_adj = x - center[0]
+    y_adj = y - center[1]
+
+    r_adj = np.sqrt(np.square(x_adj) + np.square(y_adj)) * MM_TO_INCH
+    a_adj = np.arctan2(y_adj, x_adj)
+
+    # Remove outlier data
+    sortData = np.column_stack([a_adj, r_adj])
+    sortData = sortData[sortData[:, 0].argsort()]
+    outlier_indices = hampel_filter_v(sortData[:, 1], int(r_adj.size*5/360/2), 3)
+    rnew = np.delete(sortData[:, 1], outlier_indices)
+    anew = np.delete(sortData[:, 0], outlier_indices)
+    # print("Removed ", r_adj.size - rnew.size)
+    # print("of", r_adj.size)
+
+    # New Eclipse Fit
+    xnew = rnew * np.cos(anew)*25.4
+    ynew = rnew * np.sin(anew)*25.4
+    coord = np.array(list(zip(xnew, ynew)))
+    reg = LsqEllipse().fit(coord)
+    center, width, height, phi = reg.as_parameters()
+    lsq_data = {'center': center, 'width': width, 'height': height, 'phi': phi, "Lidar_Data_f": tuple(zip(np.rad2deg(anew), rnew*25.4))}
+
+    # Eclipse Plot Arrays
+    angles = np.linspace(0, 360, 300)
+    x1 = width*np.cos(np.deg2rad(angles))
+    y1 = height*np.sin(np.deg2rad(angles))
+    fitR = np.sqrt(np.square(x1) + np.square(y1)) * MM_TO_INCH
+    fitA = np.arctan2(y1, x1)
+
+
+    fig = plt.figure(dpi=300)
+    ax = fig.add_subplot(111, projection='polar')
+    ax.scatter(anew, rnew, s=1, label='Lidar Range [in.]')
+    #center point
+    ax.scatter(0, 0, s=10, label='Center of Fit')
+    #fit shape
+    ax.plot(fitA, fitR, c='red', label='Ellipse Fit [in.]')
+    ax.legend(loc='upper center', bbox_to_anchor=(1.45, 0.8), shadow=True, ncol=1)
+    ax.set_rmin(0)
+    ax.grid(True)
+    ax.set_aspect('equal', 'box')
+    # plt.show()
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    return buf, lsq_data
+
 #testfromDB()
 # im = Image.open(buf)
 # im.show()
@@ -224,8 +314,10 @@ if __name__ == '__main__':
     from TurtleLidarDB import TurtleLidarDB
 
     with TurtleLidarDB() as db:
-        data = db.get_lidar_data_byID(19)
-
-    buf = GenerateDataPolarPlotByData(data)
+        # data = db.get_lidar_data_byID(13)
+        data = db.get_lidar_data_byID(26)
+    import time
+    buf = GenerateDataPolarPlotByDataAdjusted(data)
+    # buf = GenerateDataPolarPlotByData(data)
     im = Image.open(buf[0])
     im.show()

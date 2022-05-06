@@ -25,7 +25,7 @@ class RPLidarClass:
 
         rospy.init_node('rplidarNode', anonymous=True)
         self.scan_data_sub = rospy.Subscriber('scan', LaserScan, self.get_scan)
-        rospy.sleep(90)  # Lidar Warmup
+        rospy.sleep(10)  # Lidar Warmup
         return self
 
     def get_scan(self, LaserScan):
@@ -33,9 +33,9 @@ class RPLidarClass:
         self.scan_count = self.scan_count + 1
 
     def get_lidar_data(self, t):
-        last_scan = -1
+        last_scan = self.scan_count
         numScan = 0
-        rospy.sleep(10)
+        rospy.sleep(2.5)
         tscan = time.time()
         ang = np.array([])
         dis = np.array([])
@@ -58,12 +58,9 @@ class RPLidarClass:
                 print("No Data?")
                 rospy.sleep(.2)
 
-            if time.time() - tscan >= (t * 2):
-                print("Lidar Scan Timeout")
+            if time.time() - tscan >= t:
                 break
-            elif numScan > t * 5:
-                break
-            rospy.sleep(.1)
+            # rospy.sleep(.1)
 
         return np.rad2deg(ang), dis*1000
 

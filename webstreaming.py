@@ -19,7 +19,7 @@ import json
 import LidarPlot
 import io
 import os
-import bjoern
+# import bjoern
 import subprocess
 
 from flask_wtf import FlaskForm
@@ -29,6 +29,9 @@ from changeTime import changeTime
 from dateutil import parser
 
 from contextlib import contextmanager
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 version_json_file = "version.json"
 CAMERA_RUN = 1
@@ -131,6 +134,7 @@ def _CameraThreadFunc():
 # outputFrame = None
 SendFrame = None
 lock = threading.Lock()
+sem = threading.Semaphore()
 
 # initialize a flask object
 app = Flask(__name__)
@@ -251,20 +255,26 @@ def cleardata_item ():
 
 @app.route('/database', methods=['POST'])
 def downloadFile():
-    jsondata = request.get_json(silent=True)
-    #print(jsondata)
-    if(jsondata is None):
-        DebugPrint("Missing selected items in json form")
-        return "error"
+    global sem
+    with acquire_timeout(sem, 1) as acquired:
+        if acquired:
+            jsondata = request.get_json(silent=True)
+            #print(jsondata)
+            if(jsondata is None):
+                DebugPrint("Missing selected items in json form")
+                return "error"
 
-    idlist = jsondata['selitems']
-    DebugPrint("web wants items")
-    for id in idlist:
-        DebugPrint(str(id))
-    memory_file = create_csv_zip_bytes(idlist=idlist)
-    return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
-    # path = 'LidarData.db'
-    # return send_file(path, as_attachment=True)
+            idlist = jsondata['selitems']
+            DebugPrint("web wants items")
+            for id in idlist:
+                DebugPrint(str(id))
+            memory_file = create_csv_zip_bytes(idlist=idlist)
+            return send_file(memory_file, attachment_filename='Data.zip', as_attachment=True)
+            # path = 'LidarData.db'
+            # return send_file(path, as_attachment=True)
+        else:
+            print("Still Downloading File")
+            return Response(status=200)
 
 @app.route("/debug")
 def debug():
@@ -444,6 +454,7 @@ def get_time_endpoint():
         DATE = form.date_posted.data
         TIME = form.time_posted.data
         DebugPrint('Changing Time of Turtle')
+        DebugPrint('Changing Time of Turtle')
         changeTime(DATE, TIME)
         return redirect('/', code=303)
     return render_template('updateTime.html', form=form)
@@ -507,19 +518,6 @@ def scan_endpoint():
 # Joystick api endpoint???
 @app.route('/api/drive', methods=['POST'])
 def drive_endpoint():
-    # if not request.json:
-    #     print(request.__dict__)
-    #     return None, 400
-    # print(request.method)
-    # print(request.form)
-    #print(request.form['lr'])  # Left Right
-    #print(request.form['ud'])  # Up Down
-    # print(request.json)
-    # print(request.get_json(force=True))
-    # response = {
-    # 	'json you sent': request.get_json(force=True)
-    # 	# 'json you sent': request.json
-    # }
 
     # ZMQ PubSub
     lr = request.form['lr']
@@ -550,10 +548,10 @@ if __name__ == '__main__':
     # app.run(host=args["ip"], port=args["port"], debug=True,
     # 	threaded=True, use_reloader=False)
 
-    # app.run(host="0.0.0.0", port="5555", debug=False,
-    # 		threaded=True, use_reloader=False)
+    app.run(host="0.0.0.0", port="5555", debug=False,
+    		threaded=True, use_reloader=False)
 
-    bjoern.run(app, "0.0.0.0", 5555)
+    # bjoern.run(app, "0.0.0.0", 5555)
 
 # release the video stream pointer
 #vs.stop()
